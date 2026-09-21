@@ -98,8 +98,8 @@ renderHeader('Impostazioni');
             <input type="hidden" name="id" value="<?= (int) ($editing['id'] ?? 0) ?>"><input type="hidden" name="action" value="save">
             <div class="form-row full"><label>Nome macchina *</label><input name="name" required value="<?= e($editing['name']) ?>" placeholder="Essetre 1"></div>
             <div class="form-row full"><label>URL API *</label><input name="base_url" required value="<?= e($editing['base_url']) ?>" placeholder="http://192.168.1.100:8030"></div>
-            <div class="form-row"><label>Timeout API (s)</label><input type="number" min="2" max="30" name="api_timeout_seconds" value="<?= (int) $editing['api_timeout_seconds'] ?>"></div>
-            <div class="form-row"><label>Aggiornamento dashboard (s)</label><input type="number" min="3" max="60" name="poll_seconds" value="<?= (int) $editing['poll_seconds'] ?>"></div>
+            <div class="form-row full"><label>Timeout API (s)</label><input type="number" min="2" max="30" name="api_timeout_seconds" value="<?= (int) $editing['api_timeout_seconds'] ?>"></div>
+            <div class="form-row full"><label>Aggiornamento dashboard (s)</label><input type="number" min="3" max="60" name="poll_seconds" value="<?= (int) $editing['poll_seconds'] ?>"></div>
             <div class="form-row full"><label><input style="width:auto" type="checkbox" name="active" value="1" <?= $editing['active'] ? 'checked' : '' ?>> Macchina attiva</label></div>
             <div class="form-row full"><label>Note</label><textarea name="notes"><?= e($editing['notes']) ?></textarea></div>
             <div class="form-row full actions"><button class="btn" type="submit">Salva macchina</button><?php if ($editing['id']): ?><a class="btn secondary" href="settings.php">Annulla</a><?php endif; ?></div>
