@@ -176,12 +176,10 @@ renderHeader('Clienti');
                     <td><?= e($client['contact_name'] ?: '—') ?></td>
                     <td><?= e($client['email'] ?: '—') ?><br><span class="muted"><?= e($client['phone'] ?: '') ?></span></td>
                     <td>
-                        <a href="jobs.php?client_id=<?= (int) $client['id'] ?>">
-                            <?= (int) $client['jobs_count'] ?> totali
-                            <?php if ((int) $client['open_jobs_count'] > 0): ?>
-                                · <?= (int) $client['open_jobs_count'] ?> aperte
-                            <?php endif; ?>
-                        </a>
+                        <a href="jobs.php?client_id=<?= (int) $client['id'] ?>&status=all"><?= (int) $client['jobs_count'] ?> totali</a>
+                        <?php if ((int) $client['open_jobs_count'] > 0): ?>
+                            · <a href="jobs.php?client_id=<?= (int) $client['id'] ?>&status=open"><?= (int) $client['open_jobs_count'] ?> aperte</a>
+                        <?php endif; ?>
                     </td>
                     <td><a class="btn secondary small" href="clients.php?edit=<?= (int) $client['id'] ?>">Modifica</a></td>
                 </tr>
