@@ -210,6 +210,7 @@ function renderHeader(string $title): void
         <a href="index.php">Dashboard</a>
         <a href="clients.php">Clienti</a>
         <a href="jobs.php">Commesse</a>
+        <a href="activity.php">Attività recenti</a>
         <a href="history.php">Storico lavori</a>
         <a href="warehouse.php">Magazzino</a>
         <a href="settings.php">Impostazioni</a>
