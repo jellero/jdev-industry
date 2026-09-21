@@ -284,6 +284,24 @@ final class EconomicsService
         }
 
         if ($rule['basis'] === 'job') {
+            if (!$from && !$to) {
+                return 1.0;
+            }
+
+            $stmt = db()->prepare('SELECT MIN(event_time) FROM event_logs WHERE job_id=?');
+            $stmt->execute([$jobId]);
+            $first = $stmt->fetchColumn();
+            if (!$first) {
+                return 0.0;
+            }
+
+            $day = substr((string) $first, 0, 10);
+            if ($from && $day < $from) {
+                return 0.0;
+            }
+            if ($to && $day > $to) {
+                return 0.0;
+            }
             return 1.0;
         }
 
