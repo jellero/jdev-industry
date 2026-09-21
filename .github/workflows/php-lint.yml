@@ -1,0 +1,15 @@
+name: PHP lint
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: PHP syntax check
+        run: |
+          php -v
+          find . -type f -name '*.php' -print0 | xargs -0 -n1 php -l
