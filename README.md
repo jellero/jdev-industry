@@ -4,34 +4,37 @@ Gestionale minimale in **PHP + MySQL/MariaDB** per una o più macchine Essetre/T
 
 La base funzionale deriva dalla specifica tecnica Tecnoessetre Rev. 1.0 del 15/07/2026. Il documento è una bozza tecnica: endpoint, nomi proprietà e payload vanno verificati sulla versione del supervisore effettivamente installata.
 
-## Obiettivo
+## Funzioni
 
-Interfaccia molto semplice, senza login e senza workflow complessi:
+L'interfaccia resta volutamente semplice e senza login:
 
-- Dashboard con stato di tutte le macchine.
-- Lavorazione/progetto corrente o più recente e avanzamento, quando il payload di `/project/last10` espone campi interpretabili.
-- Pulsante **Monitora** con pagina dedicata, polling AJAX, stato completo, segnalazioni, attività oraria e payload grezzi.
-- Clienti.
-- Commesse.
-- Invio file BTL / TS7 dalla commessa alla macchina.
-- Storico lavori per giorno tramite `/logDate/{YYYYMMDD}`.
-- Archivio locale degli eventi, collegabile alla commessa tramite `Project`.
+- Dashboard multi-macchina con stato live e avanzamento via AJAX.
+- Pulsante **Stato** per ogni macchina con popup di sincronizzazione, versione supervisore, ultimo contatto, scheduler, ultimo successo/errore e prossima esecuzione per ogni operazione automatica.
+- Monitoraggio dedicato di stato, segnalazioni, attività oraria, progetto, commessa e cliente.
+- Clienti e commesse.
+- Invio BTL, BTL con conversione e TS7 direttamente dalla commessa.
+- **Attività recenti** tramite `/log`, con archiviazione locale.
+- Acquisizione incrementale manuale o schedulata tramite `/newlog`.
+- Storico per data tramite `/logDate/{YYYYMMDD}`.
+- Stato storico macchina tramite `/state/{YYYYMMDD}`.
+- Archivio eventi locale con deduplicazione e correlazione automatica alla commessa tramite `Project`.
 - Magazzino, residui e importazione archivio magazzino.
-- Pagina **Test API** con risposta grezza, HTTP status, tempi e URL per validare rapidamente i tracciati reali.
+- Scheduler CLI configurabile per macchina.
+- Pagina **Test API** con risposta grezza, HTTP status, tempi e URL.
 
 ## API integrate
 
-| Metodo | Endpoint | Uso |
+| Metodo | Endpoint | Funzione gestionale |
 |---|---|---|
-| GET | `/version` | Compatibilità / test connessione |
-| GET | `/state` | Stato corrente |
-| GET | `/state/{YYYYMMDD}` | Stato storico, disponibile nel collaudo API |
-| GET | `/project/last10` | Avanzamento ultimi progetti |
-| GET | `/log` | Log corrente, disponibile nel collaudo API |
-| GET | `/logDate/{YYYYMMDD}` | Storico produzione per giorno |
-| GET | `/newlog` | Nuovi log; solo pagina test, non polling automatico |
-| GET | `/warehouse` | Materie prime / barre |
-| GET | `/recovery` | Residui recuperabili |
+| GET | `/version` | Test connessione, popup stato e scheduler |
+| GET | `/state` | Dashboard, monitor e scheduler |
+| GET | `/state/{YYYYMMDD}` | Stato storico nella pagina Storico lavori |
+| GET | `/project/last10` | Avanzamento e progetto corrente |
+| GET | `/log` | Attività recenti + archiviazione/scheduler |
+| GET | `/logDate/{YYYYMMDD}` | Storico produzione giornaliero |
+| GET | `/newlog` | Sincronizzazione incrementale manuale/schedulata |
+| GET | `/warehouse` | Magazzino live + scheduler |
+| GET | `/recovery` | Residui live + scheduler |
 | POST | `/importBtl` | Invio BTL |
 | POST | `/convertBtl` | Invio BTL con conversione |
 | POST | `/importTs7` | Invio TS7 |
@@ -47,7 +50,7 @@ Gli endpoint obsoleti `/deleteLog` e `/deleteLogDate/{YYYYMMDD}` sono volutament
 - Web server con document root impostata sulla directory `public/`.
 - Il server del gestionale deve poter raggiungere il PC macchina sulla rete OT/LAN, tipicamente sulla porta TCP 8030.
 
-## Installazione
+## Installazione nuova
 
 1. Clona il repository.
 2. Crea il database importando `database/schema.sql`.
@@ -55,13 +58,77 @@ Gli endpoint obsoleti `/deleteLog` e `/deleteLogDate/{YYYYMMDD}` sono volutament
 4. Imposta il document root su `public/`.
 5. Apri **Impostazioni**, aggiungi la macchina con URL tipo `http://192.168.1.100:8030`.
 6. Premi **Verifica /version**.
-7. Usa **Test API** per acquisire i payload reali di `/state`, `/project/last10`, log e magazzino.
+7. Configura la pianificazione automatica.
+8. Usa **Test API** per verificare i payload reali della versione installata.
 
 Esempio rapido con PHP integrato:
 
 ```bash
 php -S 0.0.0.0:8080 -t public
 ```
+
+## Aggiornamento di un database già creato
+
+Esegui la migrazione:
+
+```bash
+mysql -u USER -p jdev_industry < database/migrations/002_automation.sql
+```
+
+La migrazione aggiunge le tabelle `machine_sync_status` e `scheduled_tasks`; non modifica i dati di clienti, commesse o storico già presenti.
+
+## Scheduler automatico
+
+Il file:
+
+```text
+bin/scheduler.php
+```
+
+è un runner CLI. Va richiamato periodicamente dal sistema operativo; è lui a verificare quali operazioni sono effettivamente in scadenza.
+
+Cron Linux consigliato, ogni minuto:
+
+```cron
+* * * * * /usr/bin/php /percorso/jdev-industry/bin/scheduler.php >> /var/log/jdev-industry-scheduler.log 2>&1
+```
+
+La frequenza del cron **non corrisponde alla frequenza delle API**: in **Impostazioni → Pianificazione automatica** puoi definire per ogni macchina l'intervallo reale di ciascuna operazione.
+
+Default:
+
+| Operazione | Default |
+|---|---:|
+| Stato macchina `/state` | 1 minuto |
+| Log corrente `/log` | 10 minuti |
+| Nuovi eventi `/newlog` | disattivato |
+| Magazzino `/warehouse` | 60 minuti |
+| Residui `/recovery` | 60 minuti |
+| Versione `/version` | 1440 minuti |
+
+Lo scheduler utilizza un lock MySQL per evitare due esecuzioni contemporanee.
+
+### Nota su /newlog
+
+`/newlog` è **disattivato di default** perché la specifica lo indica per un unico interlocutore. Va attivato automaticamente solo quando è certo che nessun altro MES/ERP stia consumando lo stesso flusso.
+
+Il normale `/log` resta attivo come sincronizzazione sicura: gli eventi vengono deduplicati localmente mediante `Guid` oppure, in assenza di GUID, tramite hash del payload.
+
+## Stato sincronizzazione
+
+Dalla Dashboard il pulsante **Stato** esegue una verifica immediata di `/version` e `/state`, poi mostra:
+
+- URL macchina;
+- versione supervisore;
+- ultimo contatto riuscito;
+- ultima esecuzione dello scheduler;
+- operazioni automatiche abilitate/disabilitate;
+- ultimo successo;
+- prossimo tentativo;
+- ultimo errore o messaggio;
+- quantità di record acquisiti quando applicabile.
+
+Le informazioni persistono in MySQL e sono quindi consultabili anche dopo errori temporanei della macchina.
 
 ## Configurazione Tecnoessetre prevista dalla specifica
 
@@ -84,11 +151,13 @@ In un'installazione definitiva va preferito l'account di servizio realmente usat
 
 Il browser **non chiama direttamente la macchina**: le richieste passano dal backend PHP. In questo modo non dipendiamo da CORS e manteniamo un unico punto di rete verso l'ambiente macchina.
 
-Il polling dashboard/monitor parte da 5 secondi per default, configurabile per macchina, con backoff fino a 30 secondi dopo errori. Non viene eseguito polling continuo senza intervallo.
+Il polling dashboard/monitor parte da 5 secondi per default, configurabile per macchina, con backoff fino a 30 secondi dopo errori. Lo scheduler ha una frequenza indipendente e configurabile.
 
 La proprietà di stato è letta sia come `Conneted` sia come `Connected`, perché la specifica segnala esplicitamente l'incongruenza.
 
 Il parser di `/project/last10` usa un adattatore prudente per alcuni nomi campo comuni. Finché non abbiamo il payload reale, la pagina Monitoraggio mostra anche il JSON grezzo; una volta raccolta una risposta reale conviene rendere il mapping deterministico.
+
+Gli eventi `CUT_COMPLETED` e `BIN_COMPLETED` collegati a una commessa possono portare automaticamente una commessa pianificata/pronta/inviata allo stato **In lavorazione**. Non viene marcata automaticamente come completata perché la specifica non documenta un evento certo di fine progetto/commessa.
 
 ## Sicurezza
 
@@ -103,9 +172,12 @@ Prima della produzione:
 1. `/version`
 2. `/state`
 3. `/project/last10`
-4. `/logDate/{YYYYMMDD}` su giornata nota
-5. upload di un BTL/TS7 di test
-6. `/warehouse` e `/recovery`
-7. eventuale `/importWarehouse` con archivio non produttivo
+4. `/log`
+5. `/logDate/{YYYYMMDD}`
+6. `/state/{YYYYMMDD}`
+7. upload di un BTL/TS7 di test
+8. `/warehouse` e `/recovery`
+9. eventuale `/importWarehouse`
+10. solo se applicabile, `/newlog`
 
 Per analizzare differenze di versione, copia direttamente la risposta dalla pagina **Test API**.
