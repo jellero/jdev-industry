@@ -28,3 +28,4 @@ try {
 
 require_once __DIR__ . '/SyncService.php';
 require_once __DIR__ . '/ApiTestService.php';
+require_once __DIR__ . '/EconomicsService.php';
