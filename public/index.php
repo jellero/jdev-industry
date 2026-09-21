@@ -19,7 +19,6 @@ renderHeader('Dashboard');
 
 <div class="page-title" style="margin-top:24px">
     <h2 style="margin:0">Stato macchine</h2>
-    <a class="btn secondary" href="settings.php">Impostazioni macchine</a>
 </div>
 
 <?php if (!$activeMachines): ?>
@@ -65,4 +64,10 @@ renderHeader('Dashboard');
     </div>
     <div data-sync-body><div class="empty">Lettura…</div></div>
 </dialog>
+<?php renderHelp([
+    'Monitora' => 'Apre la pagina di monitoraggio dettagliato della macchina con stato, segnalazioni, progetto e avanzamento aggiornati automaticamente.',
+    'Stato' => 'Apre il riepilogo della sincronizzazione: versione supervisore, ultimo contatto, esito delle operazioni automatiche e prossima esecuzione.',
+    'Storico lavori' => 'Permette di leggere gli eventi e lo stato della macchina per una data specifica e, se necessario, archiviarli nel gestionale.',
+    'Avanzamento' => 'È ricavato da /project/last10 quando il payload della versione installata espone un valore interpretabile.'
+], 'Help dashboard'); ?>
 <?php renderFooter(); ?>
