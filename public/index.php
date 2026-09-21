@@ -50,7 +50,7 @@ renderHeader('Dashboard');
                 </div>
                 <div class="actions">
                     <a class="btn" href="monitor.php?id=<?= (int) $machine['id'] ?>">Monitora</a>
-                    <button class="btn secondary" type="button" data-sync-status data-machine-id="<?= (int) $machine['id'] ?>">Stato sincronizzazione</button>
+                    <button class="btn secondary" type="button" data-sync-status data-machine-id="<?= (int) $machine['id'] ?>">Stato</button>
                     <a class="btn secondary" href="history.php?machine_id=<?= (int) $machine['id'] ?>">Storico lavori</a>
                 </div>
             </section>
