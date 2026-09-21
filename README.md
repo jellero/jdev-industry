@@ -11,7 +11,11 @@ L'interfaccia resta volutamente semplice e senza login:
 - Dashboard multi-macchina con stato live e avanzamento via AJAX.
 - Pulsante **Stato** per ogni macchina con popup di sincronizzazione, versione supervisore, ultimo contatto, scheduler, ultimo successo/errore e prossima esecuzione per ogni operazione automatica.
 - Monitoraggio dedicato di stato, segnalazioni, attività oraria, progetto, commessa e cliente.
-- Clienti e commesse.
+- Clienti e commesse con ricerca logica, filtri e collegamenti rapidi.
+- Tariffario configurabile per ora macchina, taglio completato, schema completato e quota fissa per commessa.
+- Consuntivo economico della singola lavorazione con materiali, extra, sconti e consolidamento del costo.
+- Report per cliente, mese, anno o intervallo personalizzato con ore, tagli, schemi, scarto e costi.
+- Stampe A4 della singola lavorazione e dei report, con logo e dati aziendali configurabili.
 - Invio BTL, BTL con conversione e TS7 direttamente dalla commessa.
 - **Attività recenti** tramite `/log`, con archiviazione locale.
 - Acquisizione incrementale manuale o schedulata tramite `/newlog`.
@@ -69,13 +73,16 @@ php -S 0.0.0.0:8080 -t public
 
 ## Aggiornamento di un database già creato
 
-Esegui la migrazione:
+Esegui in ordine le migrazioni non ancora applicate:
 
 ```bash
 mysql -u USER -p jdev_industry < database/migrations/002_automation.sql
+mysql -u USER -p jdev_industry < database/migrations/003_economics.sql
 ```
 
-La migrazione aggiunge le tabelle `machine_sync_status` e `scheduled_tasks`; non modifica i dati di clienti, commesse o storico già presenti.
+La migrazione 003 aggiunge tariffario, dati aziendali per la stampa, voci economiche manuali e snapshot del costo. Non modifica clienti, commesse o storico esistenti.
+
+Per il caricamento del logo il processo PHP deve poter scrivere nella directory `public/uploads/`.
 
 ## Scheduler automatico
 
@@ -159,6 +166,16 @@ La proprietà di stato è letta sia come `Conneted` sia come `Connected`, perch�
 Il parser di `/project/last10` usa un adattatore prudente per alcuni nomi campo comuni. Finché non abbiamo il payload reale, la pagina Monitoraggio mostra anche il JSON grezzo; una volta raccolta una risposta reale conviene rendere il mapping deterministico.
 
 Gli eventi `CUT_COMPLETED` e `BIN_COMPLETED` collegati a una commessa possono portare automaticamente una commessa pianificata/pronta/inviata allo stato **In lavorazione**. Non viene marcata automaticamente come completata perché la specifica non documenta un evento certo di fine progetto/commessa.
+
+## Modulo economico e stampe
+
+Il calcolo automatico usa soltanto grandezze che la specifica documenta nei log: `ElapsedTime` per il tempo macchina, `CUT_COMPLETED` per i tagli e `BIN_COMPLETED` per gli schemi. Le regole possono essere globali, specifiche per macchina e opzionalmente limitate a un valore `Material`.
+
+Il campo `Material` identifica il materiale lavorato, ma le API non forniscono il relativo prezzo di acquisto. Per questo materiali, utensili, trasporto, lavorazioni esterne, extra e sconti vengono gestiti come voci economiche manuali nella commessa. In questo modo il software non assume unità di misura o costi che non siano stati verificati sulla macchina reale.
+
+Il pulsante **Consolida costo attuale** salva una fotografia del calcolo economico della commessa. La stampa consolidata continua quindi a mostrare quel valore anche dopo successive modifiche al tariffario.
+
+Le stampe utilizzano il normale motore di stampa del browser e possono essere stampate su carta o salvate come PDF.
 
 ## Sicurezza
 
