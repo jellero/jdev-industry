@@ -19,7 +19,7 @@ renderHeader('Dashboard');
 
 <div class="page-title" style="margin-top:24px">
     <h2 style="margin:0">Stato macchine</h2>
-    <a class="btn secondary" href="settings.php">Configura macchine</a>
+    <a class="btn secondary" href="settings.php">Impostazioni macchine</a>
 </div>
 
 <?php if (!$activeMachines): ?>
