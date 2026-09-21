@@ -100,6 +100,7 @@ $clients = $stmt->fetchAll();
 $filtersActive = $q !== '' || $jobsFilter !== 'all' || $sort !== 'company';
 
 renderHeader('Clienti');
+renderPageIntro('trovare rapidamente un cliente, gestirne i riferimenti e passare con un clic alle sue commesse.');
 ?>
 <div class="grid">
     <section class="card col-4">
