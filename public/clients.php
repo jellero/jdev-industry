@@ -44,7 +44,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect('clients.php');
 }
 
-$clients = db()->query('SELECT * FROM clients ORDER BY company_name')->fetchAll();
+$q = trim((string) ($_GET['q'] ?? ''));
+$jobsFilter = (string) ($_GET['jobs'] ?? 'all');
+$sort = (string) ($_GET['sort'] ?? 'company');
+
+$allowedJobsFilters = ['all', 'with_jobs', 'without_jobs', 'open_jobs'];
+if (!in_array($jobsFilter, $allowedJobsFilters, true)) {
+    $jobsFilter = 'all';
+}
+
+$allowedSorts = ['company', 'updated', 'created'];
+if (!in_array($sort, $allowedSorts, true)) {
+    $sort = 'company';
+}
+
+$where = [];
+$params = [];
+
+if ($q !== '') {
+    $where[] = '(c.company_name LIKE ? OR c.code LIKE ? OR c.contact_name LIKE ? OR c.email LIKE ? OR c.phone LIKE ? OR c.notes LIKE ?)';
+    $like = '%' . $q . '%';
+    array_push($params, $like, $like, $like, $like, $like, $like);
+}
+
+if ($jobsFilter === 'with_jobs') {
+    $where[] = 'EXISTS (SELECT 1 FROM jobs jx WHERE jx.client_id=c.id)';
+} elseif ($jobsFilter === 'without_jobs') {
+    $where[] = 'NOT EXISTS (SELECT 1 FROM jobs jx WHERE jx.client_id=c.id)';
+} elseif ($jobsFilter === 'open_jobs') {
+    $where[] = "EXISTS (
+        SELECT 1 FROM jobs jx
+        WHERE jx.client_id=c.id
+          AND jx.status IN ('planned','ready','sent','in_progress')
+    )";
+}
+
+$orderBy = match ($sort) {
+    'updated' => 'c.updated_at DESC, c.company_name',
+    'created' => 'c.created_at DESC, c.company_name',
+    default => 'c.company_name',
+};
+
+$sql = "SELECT c.*,
+        (SELECT COUNT(*) FROM jobs j WHERE j.client_id=c.id) AS jobs_count,
+        (SELECT COUNT(*) FROM jobs j WHERE j.client_id=c.id AND j.status IN ('planned','ready','sent','in_progress')) AS open_jobs_count
+        FROM clients c";
+if ($where) {
+    $sql .= ' WHERE ' . implode(' AND ', $where);
+}
+$sql .= ' ORDER BY ' . $orderBy;
+
+$stmt = db()->prepare($sql);
+$stmt->execute($params);
+$clients = $stmt->fetchAll();
+$filtersActive = $q !== '' || $jobsFilter !== 'all' || $sort !== 'company';
 
 renderHeader('Clienti');
 ?>
@@ -70,19 +123,64 @@ renderHeader('Clienti');
     </section>
 
     <section class="card col-8">
-        <h2>Elenco clienti</h2>
+        <div class="section-heading">
+            <div>
+                <h2>Elenco clienti</h2>
+                <p class="muted small"><?= count($clients) ?> risultati<?= $filtersActive ? ' con i filtri attivi' : '' ?>.</p>
+            </div>
+        </div>
+
+        <form method="get" class="filter-panel">
+            <div class="filter-grid clients-filter-grid">
+                <div class="form-row filter-search">
+                    <label for="client-q">Cerca</label>
+                    <input id="client-q" type="search" name="q" value="<?= e($q) ?>" placeholder="Ragione sociale, codice, referente, email, telefono…">
+                </div>
+                <div class="form-row">
+                    <label for="client-jobs">Commesse</label>
+                    <select id="client-jobs" name="jobs">
+                        <option value="all" <?= $jobsFilter === 'all' ? 'selected' : '' ?>>Tutti i clienti</option>
+                        <option value="with_jobs" <?= $jobsFilter === 'with_jobs' ? 'selected' : '' ?>>Con almeno una commessa</option>
+                        <option value="open_jobs" <?= $jobsFilter === 'open_jobs' ? 'selected' : '' ?>>Con commesse aperte</option>
+                        <option value="without_jobs" <?= $jobsFilter === 'without_jobs' ? 'selected' : '' ?>>Senza commesse</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label for="client-sort">Ordina</label>
+                    <select id="client-sort" name="sort">
+                        <option value="company" <?= $sort === 'company' ? 'selected' : '' ?>>Ragione sociale A-Z</option>
+                        <option value="updated" <?= $sort === 'updated' ? 'selected' : '' ?>>Modificati di recente</option>
+                        <option value="created" <?= $sort === 'created' ? 'selected' : '' ?>>Inseriti di recente</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-actions">
+                <button class="btn" type="submit">Cerca</button>
+                <?php if ($filtersActive): ?><a class="btn secondary" href="clients.php">Azzera filtri</a><?php endif; ?>
+            </div>
+        </form>
+
         <?php if (!$clients): ?>
-            <div class="empty">Nessun cliente inserito.</div>
+            <div class="empty">
+                <strong>Nessun cliente trovato.</strong><br>
+                <span>Modifica o azzera i filtri di ricerca.</span>
+            </div>
         <?php else: ?>
         <div class="table-wrap"><table>
-            <thead><tr><th>Cliente</th><th>Codice</th><th>Referente</th><th>Contatti</th><th></th></tr></thead>
+            <thead><tr><th>Cliente</th><th>Codice</th><th>Referente</th><th>Contatti</th><th>Commesse</th><th></th></tr></thead>
             <tbody>
             <?php foreach ($clients as $client): ?>
                 <tr>
                     <td><strong><?= e($client['company_name']) ?></strong></td>
                     <td><?= e($client['code'] ?: '—') ?></td>
                     <td><?= e($client['contact_name'] ?: '—') ?></td>
-                    <td><?= e($client['email'] ?: '') ?><br><span class="muted"><?= e($client['phone'] ?: '') ?></span></td>
+                    <td><?= e($client['email'] ?: '—') ?><br><span class="muted"><?= e($client['phone'] ?: '') ?></span></td>
+                    <td>
+                        <a href="jobs.php?client_id=<?= (int) $client['id'] ?>&status=all"><?= (int) $client['jobs_count'] ?> totali</a>
+                        <?php if ((int) $client['open_jobs_count'] > 0): ?>
+                            · <a href="jobs.php?client_id=<?= (int) $client['id'] ?>&status=open"><?= (int) $client['open_jobs_count'] ?> aperte</a>
+                        <?php endif; ?>
+                    </td>
                     <td><a class="btn secondary small" href="clients.php?edit=<?= (int) $client['id'] ?>">Modifica</a></td>
                 </tr>
             <?php endforeach; ?>
@@ -92,6 +190,9 @@ renderHeader('Clienti');
     </section>
 </div>
 <?php renderHelp([
+    'Ricerca libera' => 'Cerca contemporaneamente in ragione sociale, codice cliente, referente, email, telefono e note. Non devi scegliere prima il campo.',
+    'Filtro commesse' => 'Permette di isolare clienti con commesse, senza commesse oppure con almeno una commessa ancora aperta.',
+    'Commesse' => 'Il conteggio è cliccabile e apre direttamente la pagina Commesse già filtrata sul cliente selezionato.',
     'Codice cliente' => 'Campo facoltativo per un codice interno, codice ERP o altro riferimento aziendale. Non viene inviato alla macchina.',
     'Referente' => 'Persona di riferimento del cliente. È un dato anagrafico e non influenza la comunicazione con la macchina.',
     'Note' => 'Spazio libero per informazioni operative o amministrative relative al cliente.'
