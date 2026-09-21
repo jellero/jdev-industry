@@ -1,5 +1,3 @@
-USE jdev_industry;
-
 CREATE TABLE IF NOT EXISTS machine_sync_status (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     machine_id INT UNSIGNED NOT NULL,
