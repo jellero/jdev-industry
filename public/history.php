@@ -170,4 +170,11 @@ renderHeader('Storico lavori');
     </section>
 </div>
 <?php endif; ?>
+<?php renderHelp([
+    'Stato macchina del giorno' => 'Legge /state/{data} per mostrare lo stato storico disponibile sul supervisore per la giornata selezionata.',
+    'Log produzione del giorno' => 'Legge /logDate/{data} e mostra gli eventi produttivi registrati dalla macchina nella data scelta.',
+    'Archivia nel gestionale' => 'Copia gli eventi del giorno nel database locale. Gli eventi già archiviati non vengono duplicati.',
+    'Archivio locale' => 'È lo storico già memorizzato dal gestionale. Può includere il collegamento alla commessa quando il campo Project della macchina corrisponde al riferimento della commessa.',
+    'Scarto' => 'È il valore Waste restituito dall’evento macchina, se presente. Il significato e l’unità esatti dipendono dal tracciato restituito dalla versione installata.'
+], 'Help storico lavori'); ?>
 <?php renderFooter(); ?>
