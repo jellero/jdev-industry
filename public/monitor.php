@@ -34,7 +34,9 @@ renderHeader('Monitoraggio · ' . $machine['name']);
         <section class="card col-8">
             <h2>Lavorazione</h2>
             <dl class="meta">
-                <dt>Progetto rilevato</dt><dd data-role="project">—</dd>
+                <dt>Progetto macchina</dt><dd data-role="project">—</dd>
+                <dt>Commessa</dt><dd data-role="job">—</dd>
+                <dt>Cliente</dt><dd data-role="client">—</dd>
                 <dt>Avanzamento</dt><dd data-role="progress-label">—</dd>
             </dl>
             <div class="progress" style="height:16px"><span data-role="progress"></span></div>
