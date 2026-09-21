@@ -154,6 +154,34 @@ pre.raw { margin: 0; background: #0b1220; color: #d9e3f0; border-radius: 9px; pa
 .filter-search { min-width: 0; }
 .filter-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 
+
+.page-intro { margin: -4px 0 18px; padding: 12px 14px; border-left: 4px solid var(--accent); background: #eef5ff; border-radius: 8px; display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; }
+.page-intro strong { font-size: 13px; }
+.page-intro span { color: #334155; font-size: 13px; line-height: 1.45; }
+
+.logo-preview { display: flex; align-items: center; justify-content: center; min-height: 90px; margin-bottom: 14px; border: 1px dashed var(--line); border-radius: 10px; background: #f8fafc; padding: 12px; }
+.logo-preview img { max-width: 220px; max-height: 80px; object-fit: contain; }
+
+.economic-total { font-size: 30px; font-weight: 800; white-space: nowrap; }
+.economic-kpis { margin-top: 8px; }
+.metric-box { background: #f8fafc; border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+.metric-box span { color: var(--muted); font-size: 12px; }
+.metric-box strong { font-size: 22px; }
+.compact-empty { padding: 16px 12px; }
+.cost-entry { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+.cost-total-bar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
+.cost-total-bar > div { border: 1px solid var(--line); border-radius: 9px; padding: 12px; display: flex; flex-direction: column; gap: 4px; background: #f8fafc; }
+.cost-total-bar span { color: var(--muted); font-size: 12px; }
+.cost-total-bar strong { font-size: 18px; }
+.cost-total-bar .grand { background: #eef5ff; border-color: #b9d4ff; }
+.cost-total-bar .grand strong { font-size: 22px; }
+
+.report-filter-grid { grid-template-columns: repeat(7, minmax(130px, 1fr)); }
+
+@media (max-width: 1180px) {
+    .report-filter-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 @media (max-width: 1100px) {
     .jobs-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .jobs-filter-grid .filter-search { grid-column: 1 / -1; }
@@ -170,6 +198,8 @@ pre.raw { margin: 0; background: #0b1220; color: #d9e3f0; border-radius: 9px; pa
     .sync-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 760px) {
+    .report-filter-grid { grid-template-columns: 1fr; }
+    .cost-total-bar { grid-template-columns: 1fr; }
     .clients-filter-grid, .jobs-filter-grid { grid-template-columns: 1fr; }
     .jobs-filter-grid .filter-search { grid-column: auto; }
 }
