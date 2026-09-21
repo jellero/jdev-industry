@@ -98,7 +98,8 @@ final class SyncService
         );
         $findJob = db()->prepare(
             'SELECT id FROM jobs
-             WHERE machine_id IN (?, ?) AND (external_project IN (?, ?) OR code IN (?, ?))
+             WHERE (machine_id=? OR machine_id IS NULL)
+               AND (external_project IN (?, ?) OR code IN (?, ?))
              ORDER BY id DESC LIMIT 1'
         );
         $markStarted = db()->prepare(
@@ -123,7 +124,6 @@ final class SyncService
             if ($project !== '') {
                 $findJob->execute([
                     $machine['id'],
-                    null,
                     $project,
                     $projectBase,
                     $project,
@@ -192,19 +192,19 @@ final class SyncService
             ? json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
             : null;
 
-        $sql = 'INSERT INTO machine_sync_status
+        $sql = "INSERT INTO machine_sync_status
             (machine_id, operation, last_attempt_at, last_success_at, last_error_at, last_status, last_http_status, last_duration_ms, last_items, last_message, last_payload_json)
             VALUES (?, ?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)
             ON DUPLICATE KEY UPDATE
                 last_attempt_at=VALUES(last_attempt_at),
-                last_success_at=IF(VALUES(last_status)="ok", VALUES(last_success_at), last_success_at),
-                last_error_at=IF(VALUES(last_status)="error", VALUES(last_error_at), last_error_at),
+                last_success_at=IF(VALUES(last_status)='ok', VALUES(last_success_at), last_success_at),
+                last_error_at=IF(VALUES(last_status)='error', VALUES(last_error_at), last_error_at),
                 last_status=VALUES(last_status),
                 last_http_status=VALUES(last_http_status),
                 last_duration_ms=VALUES(last_duration_ms),
                 last_items=VALUES(last_items),
                 last_message=VALUES(last_message),
-                last_payload_json=VALUES(last_payload_json)';
+                last_payload_json=VALUES(last_payload_json)";
 
         $now = date('Y-m-d H:i:s');
         db()->prepare($sql)->execute([
@@ -216,7 +216,7 @@ final class SyncService
             (int) ($result['status'] ?? 0) ?: null,
             (int) ($result['duration_ms'] ?? 0),
             max(0, $items),
-            mb_substr((string) ($message ?? ($result['error'] ?? '')), 0, 500),
+            substr((string) ($message ?? ($result['error'] ?? '')), 0, 500),
             $payloadJson,
         ]);
     }
@@ -240,7 +240,10 @@ final class SyncService
     {
         return match ($operation) {
             'state' => 'Stato macchina',
+            'state_history' => 'Stato storico',
             'log' => 'Log corrente',
+            'log_view' => 'Lettura log corrente',
+            'log_date' => 'Log storico',
             'newlog' => 'Nuovi eventi',
             'warehouse' => 'Magazzino',
             'recovery' => 'Residui',
