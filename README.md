@@ -100,6 +100,7 @@ Default:
 | Operazione | Default |
 |---|---:|
 | Stato macchina `/state` | 1 minuto |
+| Ultimi progetti `/project/last10` | 1 minuto |
 | Log corrente `/log` | 10 minuti |
 | Nuovi eventi `/newlog` | disattivato |
 | Magazzino `/warehouse` | 60 minuti |
