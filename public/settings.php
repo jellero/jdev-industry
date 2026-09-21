@@ -168,4 +168,13 @@ renderHeader('Impostazioni');
         <p>Questo gestionale è volutamente privo di login. Va quindi pubblicato solo su rete aziendale/OT protetta. Anche il servizio Tecnoessetre sulla porta 8030 deve rimanere accessibile esclusivamente dai sistemi autorizzati e non essere esposto direttamente su Internet.</p>
     </section>
 </div>
+<?php renderHelp([
+    'URL API' => 'Indirizzo del Web Server Tecnoessetre della macchina, normalmente nella forma http://IP-MACCHINA:8030. Il server del gestionale deve poter raggiungere questo indirizzo.',
+    'Timeout API' => 'Tempo massimo, in secondi, che il gestionale attende una risposta dalla macchina prima di considerare fallita la richiesta.',
+    'Aggiornamento dashboard' => 'Intervallo, in secondi, con cui la Dashboard e il Monitor aggiornano i dati live. È distinto dallo scheduler automatico.',
+    'Macchina attiva' => 'Se disattivata, la macchina non viene mostrata tra quelle operative e lo scheduler non esegue attività automatiche su di essa.',
+    'Verifica /version' => 'Esegue una chiamata semplice al supervisore per controllare connettività e versione software.',
+    'Pianificazione automatica' => 'Definisce ogni quanti minuti lo scheduler deve eseguire le singole operazioni. Il cron può partire ogni minuto: il gestionale esegue solo ciò che è effettivamente in scadenza.',
+    'Nuovi eventi /newlog' => 'È disattivato di default perché la specifica lo prevede per un unico interlocutore. Abilitalo solo se nessun altro sistema sta consumando quel flusso.'
+], 'Help impostazioni'); ?>
 <?php renderFooter(); ?>

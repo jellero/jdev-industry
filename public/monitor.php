@@ -61,4 +61,12 @@ renderHeader('Monitoraggio · ' . $machine['name']);
         </section>
     </div>
 </div>
+<?php renderHelp([
+    'Connessione' => 'Valore di connessione restituito da /state. Il gestionale riconosce sia Connected sia il nome Conneted indicato nella specifica.',
+    'Modalità' => 'È il campo Mode restituito dalla macchina e descrive la modalità operativa comunicata dal supervisore.',
+    'Progetto macchina' => 'Nome del progetto rilevato in /project/last10. Se corrisponde al riferimento di una commessa, il gestionale mostra anche commessa e cliente.',
+    'Avanzamento' => 'Percentuale ricavata dal payload di /project/last10 quando i campi disponibili permettono un calcolo affidabile.',
+    'Attività oraria' => 'Rappresentazione dei valori ActivityA restituiti da /state per le 24 ore.',
+    'Payload stato / progetti' => 'Sono le risposte grezze delle API. Servono soprattutto durante il collaudo per verificare il formato reale restituito dalla versione installata.'
+], 'Help monitoraggio'); ?>
 <?php renderFooter(); ?>

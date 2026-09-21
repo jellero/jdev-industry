@@ -142,4 +142,10 @@ renderHeader('Attività recenti');
     </section>
 </div>
 <?php endif; ?>
+<?php renderHelp([
+    'Log corrente' => 'È la lettura dell’endpoint /log e mostra gli eventi attualmente disponibili sul supervisore. Puoi archiviarli nel database locale senza creare duplicati.',
+    'Archivia log corrente' => 'Salva localmente gli eventi letti dalla macchina. Se un evento è già presente, viene ignorato grazie al GUID o all’hash del payload.',
+    'Acquisisci nuovi eventi' => 'Usa /newlog per richiedere gli eventi non ancora letti. Va usato con cautela: la specifica lo prevede per un unico interlocutore.',
+    'Ultimi eventi archiviati' => 'Sono gli eventi già persistiti nel MySQL del gestionale, quindi restano consultabili anche se non sono più presenti nel log corrente della macchina.'
+], 'Help attività recenti'); ?>
 <?php renderFooter(); ?>

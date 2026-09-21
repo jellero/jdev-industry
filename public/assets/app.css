@@ -134,6 +134,18 @@ pre.raw { margin: 0; background: #0b1220; color: #d9e3f0; border-radius: 9px; pa
 .raw-details summary { cursor: pointer; font-weight: 700; color: #334155; }
 .raw-details .raw { margin-top: 10px; }
 
+
+.help-card { margin-top: 24px; background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.help-card summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 14px 16px; font-weight: 800; }
+.help-card summary::-webkit-details-marker { display: none; }
+.help-card[open] summary { border-bottom: 1px solid var(--line); background: #f8fafc; }
+.help-icon { width: 24px; height: 24px; border-radius: 50%; display: inline-grid; place-items: center; background: #e8f0ff; color: var(--accent); font-weight: 800; flex: 0 0 auto; }
+.help-content { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; }
+.help-item { padding: 14px 16px; border-bottom: 1px solid var(--line); min-width: 0; }
+.help-item:nth-child(odd) { border-right: 1px solid var(--line); }
+.help-item p { margin: 5px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.help-item strong { font-size: 14px; }
+
 @media (max-width: 1000px) {
     .api-test-layout { grid-template-columns: 1fr; }
     .api-test-results { min-height: 0; }
@@ -145,6 +157,8 @@ pre.raw { margin: 0; background: #0b1220; color: #d9e3f0; border-radius: 9px; pa
     .sync-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 680px) {
+    .help-content { grid-template-columns: 1fr; }
+    .help-item:nth-child(odd) { border-right: 0; }
     .topbar { padding: 12px 16px; gap: 8px; }
     .topbar nav { width: 100%; overflow-x: auto; flex-wrap: nowrap; }
     .topbar nav a { white-space: nowrap; }

@@ -190,6 +190,30 @@ function eventDateTime(mixed $value): ?string
     return null;
 }
 
+
+function renderHelp(array $items, string $title = 'Help'): void
+{
+    if (!$items) {
+        return;
+    }
+    ?>
+    <details class="help-card">
+        <summary>
+            <span class="help-icon">?</span>
+            <span><?= e($title) ?></span>
+        </summary>
+        <div class="help-content">
+            <?php foreach ($items as $label => $text): ?>
+                <div class="help-item">
+                    <strong><?= e($label) ?></strong>
+                    <p><?= e($text) ?></p>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </details>
+    <?php
+}
+
 function renderHeader(string $title): void
 {
     $appName = (string) config('app.name', 'JDEV Industry');

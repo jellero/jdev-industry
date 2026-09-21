@@ -121,4 +121,12 @@ renderHeader('Commessa · ' . $job['code']);
         </table></div><?php endif; ?>
     </section>
 </div>
+<?php renderHelp([
+    'BTL · importa senza conversione' => 'Invia il file BTL all’endpoint /importBtl. Il gestionale inoltra il file così com’è al supervisore, senza richiedere la conversione prevista dall’altro endpoint.',
+    'BTL · importa con conversione' => 'Invia il BTL all’endpoint /convertBtl. In questo caso è il supervisore Tecnoessetre a eseguire la funzione di conversione prevista dalla sua API durante l’importazione.',
+    'TS7 · importa' => 'Invia un file TS7 all’endpoint /importTs7. Va usato solo quando il file di produzione è effettivamente in formato TS7.',
+    'Progetto macchina' => 'È il riferimento usato per collegare la commessa ai dati restituiti dalla macchina, in particolare al campo Project dei log. Se il file viene inviato dal gestionale e il campo è vuoto, viene usato il nome del file senza estensione.',
+    'Stato commessa' => 'Pianificata = creata ma non ancora inviata; Pronta = pronta per essere lavorata; Inviata = file spedito alla macchina; In lavorazione = sono stati rilevati eventi produttivi collegati; Completata e Annullata sono stati gestionali.',
+    'Eventi archiviati collegati' => 'Sono eventi macchina già salvati nel database locale e associati a questa commessa tramite il riferimento progetto.'
+], 'Help commessa'); ?>
 <?php renderFooter(); ?>

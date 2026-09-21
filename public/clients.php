@@ -91,4 +91,9 @@ renderHeader('Clienti');
         <?php endif; ?>
     </section>
 </div>
+<?php renderHelp([
+    'Codice cliente' => 'Campo facoltativo per un codice interno, codice ERP o altro riferimento aziendale. Non viene inviato alla macchina.',
+    'Referente' => 'Persona di riferimento del cliente. È un dato anagrafico e non influenza la comunicazione con la macchina.',
+    'Note' => 'Spazio libero per informazioni operative o amministrative relative al cliente.'
+], 'Help clienti'); ?>
 <?php renderFooter(); ?>
