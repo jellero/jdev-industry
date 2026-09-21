@@ -113,4 +113,10 @@ renderHeader('Magazzino macchina');
     </section>
 </div>
 <?php endif; ?>
+<?php renderHelp([
+    'Barre / materie prime' => 'Dati restituiti da /warehouse. Il gestionale li visualizza senza imporre un tracciato rigido, perché la struttura può dipendere dalla versione installata.',
+    'Residui recuperabili' => 'Dati restituiti da /recovery relativi al materiale residuo che il supervisore espone come recuperabile.',
+    'Importa archivio magazzino' => 'Invia un file JSON a /importWarehouse. Usa un file di collaudo prima di operare su dati reali, perché il formato deve essere compatibile con il supervisore installato.',
+    'JSON' => 'È il formato dati previsto dall’endpoint di importazione magazzino. Il gestionale non modifica il contenuto del file prima dell’invio.'
+], 'Help magazzino'); ?>
 <?php renderFooter(); ?>
