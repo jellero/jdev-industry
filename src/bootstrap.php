@@ -25,3 +25,5 @@ try {
     echo '<pre>' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</pre>';
     exit;
 }
+
+require_once __DIR__ . '/SyncService.php';

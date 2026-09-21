@@ -50,10 +50,19 @@ renderHeader('Dashboard');
                 </div>
                 <div class="actions">
                     <a class="btn" href="monitor.php?id=<?= (int) $machine['id'] ?>">Monitora</a>
+                    <button class="btn secondary" type="button" data-sync-status data-machine-id="<?= (int) $machine['id'] ?>">Stato</button>
                     <a class="btn secondary" href="history.php?machine_id=<?= (int) $machine['id'] ?>">Storico lavori</a>
                 </div>
             </section>
         <?php endforeach; ?>
     </div>
 <?php endif; ?>
+
+<dialog class="sync-dialog" id="sync-status-dialog">
+    <div class="dialog-head">
+        <h2 data-sync-title>Stato sincronizzazione</h2>
+        <button class="dialog-close" type="button" data-dialog-close aria-label="Chiudi">×</button>
+    </div>
+    <div data-sync-body><div class="empty">Lettura…</div></div>
+</dialog>
 <?php renderFooter(); ?>

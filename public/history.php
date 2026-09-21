@@ -11,17 +11,36 @@ $date = (string) ($_GET['date'] ?? $_POST['date'] ?? date('Y-m-d'));
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
     $date = date('Y-m-d');
 }
+
 $machine = $machineId ? machineById((int) $machineId) : null;
 $liveResult = null;
+$stateResult = null;
 $events = [];
-$archivedCount = null;
 
-if ($machine && ($_SERVER['REQUEST_METHOD'] === 'GET' || ($_POST['action'] ?? '') === 'archive')) {
-    $endpoint = '/logDate/' . str_replace('-', '', $date);
-    $liveResult = machineApi($machine)->get($endpoint);
+if ($machine) {
+    $api = machineApi($machine);
+    $compactDate = str_replace('-', '', $date);
+
+    $liveResult = $api->get('/logDate/' . $compactDate);
     if ($liveResult['ok'] && is_array($liveResult['json'])) {
         $events = normalizeList($liveResult['json']);
     }
+    SyncService::recordStatus(
+        (int) $machine['id'],
+        'log_date',
+        $liveResult,
+        count($events),
+        $liveResult['ok'] ? count($events) . ' eventi letti per ' . $date . '.' : ($liveResult['error'] ?: 'Lettura storico log fallita.')
+    );
+
+    $stateResult = $api->get('/state/' . $compactDate);
+    SyncService::recordStatus(
+        (int) $machine['id'],
+        'state_history',
+        $stateResult,
+        0,
+        $stateResult['ok'] ? 'Stato storico letto per ' . $date . '.' : ($stateResult['error'] ?: 'Stato storico non disponibile.')
+    );
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'archive') {
@@ -34,59 +53,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'archi
         redirect('history.php?machine_id=' . $machineId . '&date=' . urlencode($date));
     }
 
-    $inserted = 0;
-    $insert = db()->prepare(
-        'INSERT IGNORE INTO event_logs
-        (machine_id, job_id, event_key, event_time, event_type, message, project, reference, material, value_num, number_num, elapsed_time, waste, source_day, payload_json)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
-    );
-    $findJob = db()->prepare('SELECT id FROM jobs WHERE external_project=? OR code=? ORDER BY id DESC LIMIT 1');
-
-    foreach ($events as $event) {
-        if (!is_array($event)) {
-            continue;
-        }
-        $project = trim((string) ($event['Project'] ?? ''));
-        $jobId = null;
-        if ($project !== '') {
-            $findJob->execute([$project, $project]);
-            $jobId = $findJob->fetchColumn() ?: null;
-        }
-
-        $guid = trim((string) ($event['Guid'] ?? ''));
-        $eventKey = hash('sha256', $guid !== '' ? ('guid:' . $guid) : json_encode($event, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-        $payload = json_encode($event, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
-        $insert->execute([
-            $machine['id'],
-            $jobId,
-            $eventKey,
-            eventDateTime($event['DateTime'] ?? null),
-            isset($event['Type']) ? (string) $event['Type'] : null,
-            isset($event['Message']) ? (string) $event['Message'] : null,
-            $project !== '' ? $project : null,
-            isset($event['Reference']) ? (string) $event['Reference'] : null,
-            isset($event['Material']) ? (string) $event['Material'] : null,
-            is_numeric($event['Value'] ?? null) ? $event['Value'] : null,
-            is_numeric($event['Number'] ?? null) ? (int) $event['Number'] : null,
-            is_numeric($event['ElapsedTime'] ?? null) ? $event['ElapsedTime'] : null,
-            is_numeric($event['Waste'] ?? null) ? $event['Waste'] : null,
-            $date,
-            $payload,
-        ]);
-        $inserted += $insert->rowCount();
-    }
-
-    setFlash('Storico aggiornato: ' . $inserted . ' nuovi eventi archiviati.');
+    $archive = SyncService::archiveEvents($machine, $events, $date);
+    setFlash(sprintf(
+        'Storico aggiornato: %d nuovi eventi archiviati su %d letti.',
+        $archive['inserted'],
+        $archive['read']
+    ));
     redirect('history.php?machine_id=' . $machineId . '&date=' . urlencode($date));
 }
 
 $localEvents = [];
 if ($machine) {
-    $stmt = db()->prepare('SELECT e.*, j.code AS job_code FROM event_logs e LEFT JOIN jobs j ON j.id=e.job_id WHERE e.machine_id=? AND e.source_day=? ORDER BY e.event_time DESC, e.id DESC LIMIT 500');
+    $stmt = db()->prepare(
+        'SELECT e.*, j.code AS job_code
+         FROM event_logs e
+         LEFT JOIN jobs j ON j.id=e.job_id
+         WHERE e.machine_id=? AND e.source_day=?
+         ORDER BY e.event_time DESC, e.id DESC
+         LIMIT 500'
+    );
     $stmt->execute([$machine['id'], $date]);
     $localEvents = $stmt->fetchAll();
 }
+
+$stateJson = $stateResult && is_array($stateResult['json']) ? $stateResult['json'] : [];
 
 renderHeader('Storico lavori');
 ?>
@@ -94,7 +84,9 @@ renderHeader('Storico lavori');
     <form method="get" class="form-grid">
         <div class="form-row"><label>Macchina</label><select name="machine_id" required>
             <option value="">Seleziona…</option>
-            <?php foreach ($allMachines as $m): ?><option value="<?= (int) $m['id'] ?>" <?= (int)$machineId === (int)$m['id'] ? 'selected' : '' ?>><?= e($m['name']) ?></option><?php endforeach; ?>
+            <?php foreach ($allMachines as $m): ?>
+                <option value="<?= (int) $m['id'] ?>" <?= (int) $machineId === (int) $m['id'] ? 'selected' : '' ?>><?= e($m['name']) ?></option>
+            <?php endforeach; ?>
         </select></div>
         <div class="form-row"><label>Giorno</label><input type="date" name="date" value="<?= e($date) ?>" required></div>
         <div class="form-row full actions"><button class="btn" type="submit">Leggi dalla macchina</button></div>
@@ -104,11 +96,36 @@ renderHeader('Storico lavori');
 <?php if ($machine): ?>
 <div class="grid">
     <section class="card col-12">
+        <h2>Stato macchina del <?= e($date) ?> <span class="code-note">GET /state/<?= e(str_replace('-', '', $date)) ?></span></h2>
+        <?php if (!$stateResult || !$stateResult['ok']): ?>
+            <div class="alert warn">
+                Stato storico non disponibile su questa richiesta/versione:
+                <?= e($stateResult['error'] ?? ('HTTP ' . ($stateResult['status'] ?? 0))) ?>
+            </div>
+            <?php if ($stateResult && $stateResult['body'] !== ''): ?><pre class="raw"><?= e($stateResult['body']) ?></pre><?php endif; ?>
+        <?php else: ?>
+            <dl class="meta">
+                <dt>Connessione</dt><dd><?= e($stateJson['Conneted'] ?? $stateJson['Connected'] ?? '—') ?></dd>
+                <dt>Modalità</dt><dd><?= e($stateJson['Mode'] ?? '—') ?></dd>
+                <dt>Commenti</dt><dd><?= e($stateJson['Comments'] ?? '—') ?></dd>
+                <dt>Avvisi</dt><dd><?= e($stateJson['Warnings'] ?? '—') ?></dd>
+                <dt>Errori</dt><dd><?= e($stateJson['Errors'] ?? '—') ?></dd>
+            </dl>
+            <details style="margin-top:14px">
+                <summary>Payload completo dello stato storico</summary>
+                <pre class="raw" style="margin-top:10px"><?= e(json_encode($stateResult['json'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?></pre>
+            </details>
+        <?php endif; ?>
+    </section>
+
+    <section class="card col-12">
         <div class="page-title">
-            <div><h2>Log macchina · <?= e($date) ?></h2><div class="muted small">Endpoint: /logDate/<?= e(str_replace('-', '', $date)) ?></div></div>
+            <div><h2>Log produzione · <?= e($date) ?></h2><div class="muted small">GET /logDate/<?= e(str_replace('-', '', $date)) ?></div></div>
             <?php if ($liveResult && $liveResult['ok'] && $events): ?>
                 <form method="post">
-                    <input type="hidden" name="action" value="archive"><input type="hidden" name="machine_id" value="<?= (int) $machine['id'] ?>"><input type="hidden" name="date" value="<?= e($date) ?>">
+                    <input type="hidden" name="action" value="archive">
+                    <input type="hidden" name="machine_id" value="<?= (int) $machine['id'] ?>">
+                    <input type="hidden" name="date" value="<?= e($date) ?>">
                     <button class="btn secondary" type="submit">Archivia nel gestionale</button>
                 </form>
             <?php endif; ?>

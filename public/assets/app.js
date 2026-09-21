@@ -1,5 +1,11 @@
 (() => {
     const fmt = (value, fallback = '—') => value === null || value === undefined || value === '' ? fallback : String(value);
+    const escapeHtml = (value) => String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
     const asConnected = (value) => {
         if (typeof value === 'boolean') return value;
         const s = String(value ?? '').trim().toLowerCase();
@@ -104,6 +110,83 @@
         run();
     }
 
+    function statusBadge(status) {
+        const cls = status === 'ok' ? 'ok' : (status === 'error' ? 'danger' : '');
+        const label = status === 'ok' ? 'OK' : (status === 'error' ? 'Errore' : 'Mai eseguito');
+        return '<span class="badge ' + cls + '">' + label + '</span>';
+    }
+
+    async function openSyncStatus(machineId) {
+        const dialog = document.getElementById('sync-status-dialog');
+        if (!dialog) return;
+
+        const title = dialog.querySelector('[data-sync-title]');
+        const body = dialog.querySelector('[data-sync-body]');
+        title.textContent = 'Stato sincronizzazione';
+        body.innerHTML = '<div class="empty">Verifica connessione e sincronizzazioni in corso…</div>';
+
+        if (typeof dialog.showModal === 'function') dialog.showModal();
+        else dialog.setAttribute('open', 'open');
+
+        try {
+            const response = await fetch('ajax/sync-status.php?id=' + encodeURIComponent(machineId) + '&refresh=1', {
+                headers: { 'Accept': 'application/json' },
+                cache: 'no-store'
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Impossibile leggere lo stato');
+
+            title.textContent = 'Sincronizzazione · ' + data.machine.name;
+            const statuses = new Map((data.statuses || []).map(row => [row.operation, row]));
+            const taskRows = (data.tasks || []).map(task => {
+                const state = statuses.get(task.operation) || {};
+                const schedule = task.enabled
+                    ? 'Ogni ' + task.interval_minutes + ' min'
+                    : 'Disattivata';
+                return '<tr>' +
+                    '<td><strong>' + escapeHtml(task.label) + '</strong></td>' +
+                    '<td>' + escapeHtml(schedule) + '</td>' +
+                    '<td>' + statusBadge(state.last_status || task.last_status) + '</td>' +
+                    '<td>' + escapeHtml(state.last_success_at || '—') + '</td>' +
+                    '<td>' + escapeHtml(task.next_run_at || '—') + '</td>' +
+                    '<td>' + escapeHtml(state.message || task.last_message || '—') + '</td>' +
+                    '</tr>';
+            }).join('');
+
+            const lastSchedulerRun = (data.tasks || [])
+                .map(task => task.last_run_at)
+                .filter(Boolean)
+                .sort()
+                .at(-1) || '—';
+
+            body.innerHTML =
+                '<div class="sync-summary">' +
+                    '<div><span class="muted small">URL macchina</span><strong>' + escapeHtml(data.machine.base_url) + '</strong></div>' +
+                    '<div><span class="muted small">Versione</span><strong>' + escapeHtml(data.machine.last_version || '—') + '</strong></div>' +
+                    '<div><span class="muted small">Ultimo contatto</span><strong>' + escapeHtml(data.machine.last_seen_at || '—') + '</strong></div>' +
+                    '<div><span class="muted small">Ultimo scheduler</span><strong>' + escapeHtml(lastSchedulerRun) + '</strong></div>' +
+                '</div>' +
+                '<div class="table-wrap" style="margin-top:16px"><table>' +
+                    '<thead><tr><th>Operazione</th><th>Pianificazione</th><th>Esito</th><th>Ultimo successo</th><th>Prossima</th><th>Dettaglio</th></tr></thead>' +
+                    '<tbody>' + taskRows + '</tbody>' +
+                '</table></div>';
+        } catch (error) {
+            body.innerHTML = '<div class="alert error">' + escapeHtml(error.message) + '</div>';
+        }
+    }
+
     document.querySelectorAll('.machine-live').forEach(el => startPoll(el, renderCard));
     document.querySelectorAll('.machine-monitor').forEach(el => startPoll(el, renderMonitor));
+
+    document.querySelectorAll('[data-sync-status]').forEach(button => {
+        button.addEventListener('click', () => openSyncStatus(button.dataset.machineId));
+    });
+
+    document.querySelectorAll('[data-dialog-close]').forEach(button => {
+        button.addEventListener('click', () => {
+            const dialog = button.closest('dialog');
+            if (dialog && typeof dialog.close === 'function') dialog.close();
+            else if (dialog) dialog.removeAttribute('open');
+        });
+    });
 })();
