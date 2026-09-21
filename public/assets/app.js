@@ -5,6 +5,9 @@
         const s = String(value ?? '').trim().toLowerCase();
         return ['1', 'true', 'yes', 'ok', 'connected', 'connesso'].includes(s);
     };
+    const jobLabel = (s) => s.job_code
+        ? s.job_code + (s.job_name ? ' · ' + s.job_name : '')
+        : fmt(s.project_name, 'Nessun progetto rilevato');
 
     async function getOverview(id) {
         const response = await fetch('ajax/machine-overview.php?id=' + encodeURIComponent(id), {
@@ -23,7 +26,7 @@
         badge.textContent = connected ? 'Connessa' : (s.connected ? fmt(s.connected) : 'Stato non disponibile');
         badge.className = 'badge ' + (connected ? 'ok' : 'warn');
         card.querySelector('[data-role="mode"]').textContent = fmt(s.mode);
-        card.querySelector('[data-role="project"]').textContent = fmt(s.project_name, 'Nessun progetto rilevato');
+        card.querySelector('[data-role="project"]').textContent = jobLabel(s);
 
         const progress = card.querySelector('[data-role="progress"]');
         const progressLabel = card.querySelector('[data-role="progress-label"]');
@@ -47,6 +50,8 @@
         root.querySelector('[data-role="warnings"]').textContent = fmt(s.warnings);
         root.querySelector('[data-role="errors"]').textContent = fmt(s.errors);
         root.querySelector('[data-role="project"]').textContent = fmt(s.project_name);
+        root.querySelector('[data-role="job"]').textContent = s.job_code ? jobLabel(s) : 'Non associata';
+        root.querySelector('[data-role="client"]').textContent = fmt(s.client_name);
         root.querySelector('[data-role="progress-label"]').textContent = typeof s.progress === 'number' ? s.progress.toFixed(1) + '%' : '—';
         root.querySelector('[data-role="progress"]').style.width = typeof s.progress === 'number' ? Math.max(0, Math.min(100, s.progress)) + '%' : '0%';
 
