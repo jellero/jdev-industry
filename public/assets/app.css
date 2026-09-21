@@ -150,7 +150,8 @@ pre.raw { margin: 0; background: #0b1220; color: #d9e3f0; border-radius: 9px; pa
 .filter-panel { margin: 0 0 18px; padding: 14px; background: #f8fafc; border: 1px solid var(--line); border-radius: 10px; }
 .filter-grid { display: grid; gap: 12px; align-items: end; }
 .clients-filter-grid { grid-template-columns: minmax(220px, 2fr) minmax(180px, 1fr) minmax(170px, 1fr); }
-.jobs-filter-grid { grid-template-columns: minmax(240px, 2fr) repeat(4, minmax(140px, 1fr)); }
+.jobs-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.jobs-filter-grid .filter-search { grid-column: 1 / -1; }
 .filter-search { min-width: 0; }
 .filter-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 
@@ -180,11 +181,6 @@ pre.raw { margin: 0; background: #0b1220; color: #d9e3f0; border-radius: 9px; pa
 
 @media (max-width: 1180px) {
     .report-filter-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-
-@media (max-width: 1100px) {
-    .jobs-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .jobs-filter-grid .filter-search { grid-column: 1 / -1; }
 }
 
 @media (max-width: 1000px) {
