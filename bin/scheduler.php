@@ -19,8 +19,8 @@ try {
         SyncService::ensureTasks((int) $machine['id']);
     }
 
-    $sql = "SELECT t.*, m.name, m.base_url, m.api_timeout_seconds, m.poll_seconds, m.active,
-                   m.last_version, m.last_seen_at, m.notes
+    $sql = "SELECT t.id, t.machine_id, t.operation, t.interval_minutes, t.next_run_at,
+                   m.name
             FROM scheduled_tasks t
             JOIN machines m ON m.id=t.machine_id
             WHERE t.enabled=1
@@ -38,21 +38,27 @@ try {
     foreach ($tasks as $task) {
         $started = date('Y-m-d H:i:s');
         $next = date('Y-m-d H:i:s', time() + max(1, (int) $task['interval_minutes']) * 60);
+        $machine = machineById((int) $task['machine_id']);
 
-        try {
-            $result = SyncService::run($task, (string) $task['operation']);
-            $status = $result['ok'] ? 'ok' : 'error';
-            $message = (string) ($result['message'] ?? $result['error'] ?? '');
-        } catch (Throwable $e) {
+        if (!$machine) {
             $status = 'error';
-            $message = $e->getMessage();
+            $message = 'Macchina non trovata.';
+        } else {
+            try {
+                $result = SyncService::run($machine, (string) $task['operation']);
+                $status = $result['ok'] ? 'ok' : 'error';
+                $message = (string) ($result['message'] ?? $result['error'] ?? '');
+            } catch (Throwable $e) {
+                $status = 'error';
+                $message = $e->getMessage();
+            }
         }
 
         $update->execute([
             $started,
             $next,
             $status,
-            mb_substr($message, 0, 500),
+            substr($message, 0, 500),
             $task['id'],
         ]);
 
