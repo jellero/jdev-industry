@@ -251,4 +251,14 @@ renderHeader('Test API Tecnoessetre');
         <?php endif; ?>
     </section>
 </div>
+<?php renderHelp([
+    'Suite completa' => 'Esegue in sequenza le API GET sicure: versione, stato, progetti, log, stato/log storico, magazzino e residui. /newlog e gli upload restano esclusi finché non li abiliti esplicitamente.',
+    'Test singolo' => 'Esegue solo l’endpoint selezionato. È utile per analizzare un problema specifico o copiare una singola risposta grezza.',
+    'PASS' => 'La richiesta è riuscita e la risposta contiene una struttura interpretabile per quel test.',
+    'WARNING' => 'La macchina ha risposto, ma il payload è incompleto, anomalo o non ancora mappato con certezza. Apri il dettaglio tecnico e copia la risposta grezza.',
+    'FAIL' => 'La richiesta non è riuscita: per esempio timeout, connessione rifiutata, HTTP di errore o altro problema tecnico.',
+    'SKIPPED' => 'Il test non è stato eseguito volontariamente, ad esempio perché manca un file di upload o perché /newlog non è stato abilitato.',
+    'Includi /newlog' => 'Usa l’endpoint incrementale dei nuovi log. Abilitalo solo se questo gestionale è l’unico consumatore del flusso.',
+    'Test di upload' => 'Per /importBtl, /convertBtl, /importTs7 e /importWarehouse devi fornire i file di collaudo. Senza file il test viene indicato come SKIPPED.'
+], 'Help Test API'); ?>
 <?php renderFooter(); ?>
