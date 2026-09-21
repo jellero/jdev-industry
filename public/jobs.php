@@ -113,4 +113,10 @@ renderHeader('Commesse');
         </table></div><?php endif; ?>
     </section>
 </div>
+<?php renderHelp([
+    'Codice commessa' => 'Identificativo univoco interno del lavoro. Può anche essere usato per correlare i log se coincide con il riferimento Project restituito dalla macchina.',
+    'Macchina' => 'È la macchina industriale associata alla commessa. Serve anche per abilitare l’invio del file di produzione dalla pagina della commessa.',
+    'Riferimento progetto macchina' => 'È il nome con cui la macchina identifica il lavoro nei propri log. Compilarlo consente di collegare automaticamente eventi e consuntivi alla commessa.',
+    'Stati' => 'Pianificata, Pronta, Inviata alla macchina, In lavorazione, Completata o Annullata. Alcuni passaggi possono essere aggiornati automaticamente quando vengono acquisiti eventi macchina.'
+], 'Help commesse'); ?>
 <?php renderFooter(); ?>
