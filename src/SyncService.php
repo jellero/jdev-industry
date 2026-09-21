@@ -5,6 +5,7 @@ final class SyncService
 {
     public const DEFAULT_TASKS = [
         'state' => ['enabled' => 1, 'interval' => 1],
+        'projects' => ['enabled' => 1, 'interval' => 1],
         'log' => ['enabled' => 1, 'interval' => 10],
         'newlog' => ['enabled' => 0, 'interval' => 2],
         'warehouse' => ['enabled' => 1, 'interval' => 60],
@@ -32,6 +33,7 @@ final class SyncService
         $path = match ($operation) {
             'version' => '/version',
             'state' => '/state',
+            'projects' => '/project/last10',
             'log' => '/log',
             'newlog' => '/newlog',
             'warehouse' => '/warehouse',
@@ -65,6 +67,12 @@ final class SyncService
                 $version = trim((string) $result['body']);
                 db()->prepare('UPDATE machines SET last_version=? WHERE id=?')->execute([$version ?: null, $machine['id']]);
                 $message = 'Versione: ' . ($version ?: 'risposta vuota');
+            } elseif ($operation === 'projects') {
+                $items = is_array($result['json']) ? count(normalizeList($result['json'])) : 0;
+                $summary = projectSummary($result['json']);
+                $message = $summary['name']
+                    ? 'Progetto rilevato: ' . $summary['name']
+                    : ($items . ' progetti ricevuti.');
             } elseif (in_array($operation, ['log', 'newlog'], true)) {
                 if (is_array($result['json'])) {
                     $archive = self::archiveEvents($machine, normalizeList($result['json']));
@@ -231,7 +239,11 @@ final class SyncService
     public static function tasks(int $machineId): array
     {
         self::ensureTasks($machineId);
-        $stmt = db()->prepare('SELECT * FROM scheduled_tasks WHERE machine_id=? ORDER BY operation');
+        $stmt = db()->prepare(
+            "SELECT * FROM scheduled_tasks
+             WHERE machine_id=?
+             ORDER BY FIELD(operation, 'state','projects','log','newlog','warehouse','recovery','version'), operation"
+        );
         $stmt->execute([$machineId]);
         return $stmt->fetchAll();
     }
@@ -241,6 +253,7 @@ final class SyncService
         return match ($operation) {
             'state' => 'Stato macchina',
             'state_history' => 'Stato storico',
+            'projects' => 'Ultimi progetti',
             'log' => 'Log corrente',
             'log_view' => 'Lettura log corrente',
             'log_date' => 'Log storico',
