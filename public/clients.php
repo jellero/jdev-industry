@@ -100,6 +100,7 @@ $clients = $stmt->fetchAll();
 $filtersActive = $q !== '' || $jobsFilter !== 'all' || $sort !== 'company';
 
 renderHeader('Clienti');
+renderPageIntro('trovare rapidamente un cliente, gestirne i riferimenti e passare con un clic alle sue commesse.');
 ?>
 <div class="grid">
     <section class="card col-4">
@@ -181,7 +182,10 @@ renderHeader('Clienti');
                             · <a href="jobs.php?client_id=<?= (int) $client['id'] ?>&status=open"><?= (int) $client['open_jobs_count'] ?> aperte</a>
                         <?php endif; ?>
                     </td>
-                    <td><a class="btn secondary small" href="clients.php?edit=<?= (int) $client['id'] ?>">Modifica</a></td>
+                    <td><div class="actions" style="margin:0">
+                        <a class="btn secondary small" href="clients.php?edit=<?= (int) $client['id'] ?>">Modifica</a>
+                        <a class="btn secondary small" href="reports.php?client_id=<?= (int) $client['id'] ?>&preset=year">Report</a>
+                    </div></td>
                 </tr>
             <?php endforeach; ?>
             </tbody>

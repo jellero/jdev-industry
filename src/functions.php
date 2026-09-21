@@ -191,6 +191,21 @@ function eventDateTime(mixed $value): ?string
 }
 
 
+function money(float|int|string $value): string
+{
+    return number_format((float) $value, 2, ',', '.') . ' €';
+}
+
+function renderPageIntro(string $text): void
+{
+    ?>
+    <div class="page-intro">
+        <strong>Questa pagina serve a:</strong>
+        <span><?= e($text) ?></span>
+    </div>
+    <?php
+}
+
 function renderHelp(array $items, string $title = 'Help'): void
 {
     if (!$items) {
@@ -237,6 +252,8 @@ function renderHeader(string $title): void
         <a href="activity.php">Attività recenti</a>
         <a href="history.php">Storico lavori</a>
         <a href="warehouse.php">Magazzino</a>
+        <a href="economics.php">Tariffario</a>
+        <a href="reports.php">Report</a>
         <a href="settings.php">Impostazioni</a>
         <a href="api-test.php">Test API</a>
     </nav>

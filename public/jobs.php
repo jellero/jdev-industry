@@ -119,6 +119,7 @@ $jobs = $stmt->fetchAll();
 $filtersActive = $q !== '' || $statusFilter !== 'open' || $clientFilter > 0 || $machineFilter > 0 || $sort !== 'updated';
 
 renderHeader('Commesse');
+renderPageIntro('cercare, filtrare e gestire i lavori da inviare o già inviati alle macchine, seguendone lo stato operativo.');
 ?>
 <div class="grid">
     <section class="card col-4">
