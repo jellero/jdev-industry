@@ -6,11 +6,11 @@ final class SyncService
     public const DEFAULT_TASKS = [
         'state' => ['enabled' => 1, 'interval' => 1],
         'projects' => ['enabled' => 1, 'interval' => 1],
-        'log' => ['enabled' => 1, 'interval' => 10],
-        'newlog' => ['enabled' => 0, 'interval' => 2],
-        'warehouse' => ['enabled' => 1, 'interval' => 60],
-        'recovery' => ['enabled' => 1, 'interval' => 60],
-        'version' => ['enabled' => 1, 'interval' => 1440],
+        'log' => ['enabled' => 1, 'interval' => 1],
+        'newlog' => ['enabled' => 0, 'interval' => 1],
+        'warehouse' => ['enabled' => 1, 'interval' => 1],
+        'recovery' => ['enabled' => 1, 'interval' => 1],
+        'version' => ['enabled' => 1, 'interval' => 1],
     ];
 
     public static function ensureTasks(int $machineId): void
