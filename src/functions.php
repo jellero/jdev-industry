@@ -247,6 +247,7 @@ function renderHeader(string $title): void
 {
     $appName = (string) config('app.name', 'JDEV Industry');
     $flash = pullFlash();
+    $cssVersion = (int) (@filemtime(dirname(__DIR__) . '/public/assets/app.css') ?: 0);
     ?>
 <!doctype html>
 <html lang="it">
@@ -254,7 +255,7 @@ function renderHeader(string $title): void
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($title) ?> · <?= e($appName) ?></title>
-    <link rel="stylesheet" href="assets/app.css">
+    <link rel="stylesheet" href="assets/app.css?v=<?= $cssVersion ?>">
 </head>
 <body>
 <header class="topbar">
@@ -282,9 +283,10 @@ function renderHeader(string $title): void
 
 function renderFooter(): void
 {
+    $jsVersion = (int) (@filemtime(dirname(__DIR__) . '/public/assets/app.js') ?: 0);
     ?>
 </main>
-<script src="assets/app.js"></script>
+<script src="assets/app.js?v=<?= $jsVersion ?>"></script>
 </body>
 </html>
 <?php
