@@ -77,6 +77,11 @@ if ($machine) {
 }
 
 $stateJson = $stateResult && is_array($stateResult['json']) ? $stateResult['json'] : [];
+$stateConnected = $stateJson['Conneted'] ?? $stateJson['Connected'] ?? null;
+$emptyEventList = $liveResult
+    && is_array($liveResult['json'])
+    && array_is_list($liveResult['json'])
+    && $liveResult['json'] === [];
 
 renderHeader('Storico lavori');
 ?>
@@ -105,7 +110,7 @@ renderHeader('Storico lavori');
             <?php if ($stateResult && $stateResult['body'] !== ''): ?><pre class="raw"><?= e($stateResult['body']) ?></pre><?php endif; ?>
         <?php else: ?>
             <dl class="meta">
-                <dt>Connessione</dt><dd><?= e($stateJson['Conneted'] ?? $stateJson['Connected'] ?? '—') ?></dd>
+                <dt>Connessione</dt><dd><?= e(connectionStatusLabel($stateConnected)) ?></dd>
                 <dt>Modalità</dt><dd><?= e($stateJson['Mode'] ?? '—') ?></dd>
                 <dt>Commenti</dt><dd><?= e($stateJson['Comments'] ?? '—') ?></dd>
                 <dt>Avvisi</dt><dd><?= e($stateJson['Warnings'] ?? '—') ?></dd>
@@ -134,6 +139,8 @@ renderHeader('Storico lavori');
         <?php if (!$liveResult || !$liveResult['ok']): ?>
             <div class="alert error">Lettura non riuscita: <?= e($liveResult['error'] ?? ('HTTP ' . ($liveResult['status'] ?? 0))) ?></div>
             <?php if ($liveResult): ?><pre class="raw"><?= e($liveResult['body']) ?></pre><?php endif; ?>
+        <?php elseif ($emptyEventList): ?>
+            <div class="empty">Nessun evento produttivo registrato dalla macchina per questa giornata.</div>
         <?php elseif (!$events): ?>
             <div class="empty">La risposta è valida ma non contiene un elenco eventi riconosciuto.</div>
             <pre class="raw"><?= e(json_encode($liveResult['json'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?></pre>

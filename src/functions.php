@@ -87,6 +87,28 @@ function statusLabel(string $status): string
     };
 }
 
+function connectionStatusLabel(mixed $value): string
+{
+    if (is_bool($value)) {
+        return $value ? 'Connessa' : 'Disconnessa';
+    }
+
+    if (is_numeric($value)) {
+        return (float) $value !== 0.0 ? 'Connessa' : 'Disconnessa';
+    }
+
+    $text = trim((string) ($value ?? ''));
+    $normalized = strtolower($text);
+    if (in_array($normalized, ['true', 'yes', 'ok', 'connected', 'connesso'], true)) {
+        return 'Connessa';
+    }
+    if (in_array($normalized, ['false', 'no', 'offline', 'disconnected', 'disconnesso'], true)) {
+        return 'Disconnessa';
+    }
+
+    return $text !== '' ? $text : '—';
+}
+
 function normalizeList(mixed $payload): array
 {
     if (!is_array($payload)) {
