@@ -97,7 +97,7 @@ function normalizeList(mixed $payload): array
         return $payload;
     }
 
-    foreach (['Items', 'items', 'Data', 'data', 'Events', 'events', 'Log', 'log', 'Projects', 'projects'] as $key) {
+    foreach (['Items', 'items', 'Data', 'data', 'Events', 'events', 'Log', 'log', 'Projects', 'projects', 'Raws', 'raws'] as $key) {
         if (isset($payload[$key]) && is_array($payload[$key])) {
             return array_is_list($payload[$key]) ? $payload[$key] : [$payload[$key]];
         }
@@ -126,15 +126,21 @@ function projectSummary(mixed $payload): array
         $selected = is_array($items[0] ?? null) ? $items[0] : [];
     }
 
-    $name = $selected['Project']
-        ?? $selected['project']
-        ?? $selected['Name']
-        ?? $selected['name']
-        ?? $selected['Code']
-        ?? $selected['code']
-        ?? $selected['FileName']
-        ?? $selected['filename']
-        ?? null;
+    $name = null;
+    foreach ([
+        'OriginalFileName', 'originalFileName',
+        'Project', 'project',
+        'ListName', 'listname',
+        'Name', 'name',
+        'Code', 'code',
+        'FileName', 'filename',
+    ] as $key) {
+        $candidate = $selected[$key] ?? null;
+        if (is_scalar($candidate) && trim((string) $candidate) !== '') {
+            $name = (string) $candidate;
+            break;
+        }
+    }
 
     $progress = $selected['Progress']
         ?? $selected['progress']
@@ -147,8 +153,16 @@ function projectSummary(mixed $payload): array
         ?? null;
 
     if ($progress === null) {
-        $done = $selected['Completed'] ?? $selected['completed'] ?? null;
-        $total = $selected['Total'] ?? $selected['total'] ?? null;
+        $done = $selected['Completed']
+            ?? $selected['completed']
+            ?? $selected['Done']
+            ?? $selected['done']
+            ?? null;
+        $total = $selected['Total']
+            ?? $selected['total']
+            ?? $selected['Requested']
+            ?? $selected['requested']
+            ?? null;
         if (is_numeric($done) && is_numeric($total) && (float) $total > 0) {
             $progress = ((float) $done / (float) $total) * 100;
         }

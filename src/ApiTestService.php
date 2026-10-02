@@ -115,6 +115,7 @@ final class ApiTestService
             'error' => (string) ($result['error'] ?? ''),
             'body' => (string) ($result['body'] ?? ''),
             'json' => $result['json'] ?? null,
+            'json_normalized' => (bool) ($result['json_normalized'] ?? false),
         ];
     }
 
@@ -171,9 +172,13 @@ final class ApiTestService
                 ];
             }
 
+            $compatibilityNote = ($result['json_normalized'] ?? false)
+                ? ' Payload Tecnoessetre normalizzato da new Date(...).'
+                : '';
+
             return [
                 'status' => 'pass',
-                'detail' => 'JSON valido. Campi riconosciuti: ' . implode(', ', $found) . '.',
+                'detail' => 'JSON valido. Campi riconosciuti: ' . implode(', ', $found) . '.' . $compatibilityNote,
                 'guidance' => 'Nessuna azione richiesta.',
             ];
         }
@@ -200,16 +205,22 @@ final class ApiTestService
                         'guidance' => 'Copia il payload grezzo di /project/last10 per rendere deterministico il mapping di nome e avanzamento.',
                     ];
                 }
+                $compatibilityNote = ($result['json_normalized'] ?? false)
+                    ? ' Payload Tecnoessetre normalizzato da new Date(...).'
+                    : '';
                 return [
                     'status' => 'pass',
-                    'detail' => $count . ' record ricevuti' . ($project !== '' ? '; progetto rilevato: ' . $project : '') . '.',
+                    'detail' => $count . ' record ricevuti' . ($project !== '' ? '; progetto rilevato: ' . $project : '') . '.' . $compatibilityNote,
                     'guidance' => 'Nessuna azione richiesta.',
                 ];
             }
 
+            $compatibilityNote = ($result['json_normalized'] ?? false)
+                ? ' Payload Tecnoessetre normalizzato da new Date(...).'
+                : '';
             return [
                 'status' => 'pass',
-                'detail' => $count . ' elementi ricevuti. Anche 0 elementi è un esito valido.',
+                'detail' => $count . ' elementi ricevuti. Anche 0 elementi è un esito valido.' . $compatibilityNote,
                 'guidance' => 'Nessuna azione richiesta.',
             ];
         }

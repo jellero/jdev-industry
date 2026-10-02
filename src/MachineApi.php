@@ -62,11 +62,37 @@ final class MachineApi
         $durationMs = (int) round((microtime(true) - $started) * 1000);
         $body = $body === false ? '' : (string) $body;
         $json = null;
+        $jsonNormalized = false;
+        $jsonError = null;
 
         if ($body !== '') {
             $decoded = json_decode($body, true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 $json = $decoded;
+            } else {
+                $jsonError = json_last_error_msg();
+
+                // Alcune versioni Tecnoessetre restituiscono oggetti JavaScript
+                // come new Date(1234567890000), che non appartengono al JSON.
+                // Manteniamo il body originale e normalizziamo solo per il parser.
+                $normalizedBody = preg_replace(
+                    '/\bnew\s+Date\s*\(\s*(-?\d+(?:\.\d+)?)\s*\)/i',
+                    '$1',
+                    $body,
+                    -1,
+                    $replacementCount
+                );
+
+                if ($replacementCount > 0 && is_string($normalizedBody)) {
+                    $decoded = json_decode($normalizedBody, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $json = $decoded;
+                        $jsonNormalized = true;
+                        $jsonError = null;
+                    } else {
+                        $jsonError = json_last_error_msg();
+                    }
+                }
             }
         }
 
@@ -77,6 +103,8 @@ final class MachineApi
             'content_type' => $contentType,
             'body' => $body,
             'json' => $json,
+            'json_normalized' => $jsonNormalized,
+            'json_error' => $jsonError,
             'error' => $error,
             'errno' => $errno,
             'duration_ms' => $durationMs,

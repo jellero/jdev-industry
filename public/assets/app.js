@@ -6,10 +6,19 @@
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#039;');
-    const asConnected = (value) => {
+    const connectionState = (value) => {
         if (typeof value === 'boolean') return value;
+        if (typeof value === 'number') return value !== 0;
         const s = String(value ?? '').trim().toLowerCase();
-        return ['1', 'true', 'yes', 'ok', 'connected', 'connesso'].includes(s);
+        if (['1', 'true', 'yes', 'ok', 'connected', 'connesso'].includes(s)) return true;
+        if (['0', 'false', 'no', 'offline', 'disconnected', 'disconnesso'].includes(s)) return false;
+        return null;
+    };
+    const connectionLabel = (value) => {
+        const state = connectionState(value);
+        if (state === true) return 'Connessa';
+        if (state === false) return 'Disconnessa';
+        return fmt(value, 'Stato non disponibile');
     };
     const jobLabel = (s) => s.job_code
         ? s.job_code + (s.job_name ? ' · ' + s.job_name : '')
@@ -28,9 +37,9 @@
     function renderCard(card, data) {
         const s = data.summary || {};
         const badge = card.querySelector('[data-role="connection"]');
-        const connected = asConnected(s.connected);
-        badge.textContent = connected ? 'Connessa' : (s.connected ? fmt(s.connected) : 'Stato non disponibile');
-        badge.className = 'badge ' + (connected ? 'ok' : 'warn');
+        const connected = connectionState(s.connected);
+        badge.textContent = connectionLabel(s.connected);
+        badge.className = 'badge ' + (connected === true ? 'ok' : (connected === false ? 'danger' : 'warn'));
         card.querySelector('[data-role="mode"]').textContent = fmt(s.mode);
         card.querySelector('[data-role="project"]').textContent = jobLabel(s);
 
@@ -50,7 +59,7 @@
 
     function renderMonitor(root, data) {
         const s = data.summary || {};
-        root.querySelector('[data-role="connection"]').textContent = fmt(s.connected);
+        root.querySelector('[data-role="connection"]').textContent = connectionLabel(s.connected);
         root.querySelector('[data-role="mode"]').textContent = fmt(s.mode);
         root.querySelector('[data-role="comments"]').textContent = fmt(s.comments);
         root.querySelector('[data-role="warnings"]').textContent = fmt(s.warnings);
