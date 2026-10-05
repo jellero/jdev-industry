@@ -54,6 +54,56 @@ Gli endpoint obsoleti `/deleteLog` e `/deleteLogDate/{YYYYMMDD}` sono volutament
 - Web server con document root impostata sulla directory `public/`.
 - Il server del gestionale deve poter raggiungere il PC macchina sulla rete OT/LAN, tipicamente sulla porta TCP 8030.
 
+## Avvio completo con Docker
+
+L'ambiente Docker comprende tre servizi:
+
+- `web`: PHP 8.3 e Apache, disponibile su <http://localhost:8080>;
+- `db`: MariaDB 11.4, esposta localmente sulla porta `3307`;
+- `scheduler`: esegue `bin/scheduler.php` ogni minuto.
+
+Avvio completo:
+
+```powershell
+docker compose -f compose.test.yml up -d --build
+```
+
+Verifica dei servizi:
+
+```powershell
+docker compose -f compose.test.yml ps
+docker compose -f compose.test.yml logs --tail=100 web db scheduler
+```
+
+Tutti e tre i servizi devono risultare attivi; `db` deve risultare `healthy`.
+Nei log dello scheduler devono comparire righe con esito `OK` per le operazioni
+abilitate. Il database viene inizializzato automaticamente da
+`database/schema.sql` soltanto alla creazione iniziale del volume.
+
+Per aggiornare un checkout già esistente:
+
+```powershell
+git pull --ff-only
+docker compose -f compose.test.yml up -d --build
+```
+
+Arresto senza cancellare il database:
+
+```powershell
+docker compose -f compose.test.yml down
+```
+
+Ripristino completo, con cancellazione del solo database Docker di test:
+
+```powershell
+docker compose -f compose.test.yml down -v
+docker compose -f compose.test.yml up -d --build
+```
+
+Le credenziali presenti in `compose.test.yml` sono esclusivamente locali e non
+devono essere utilizzate in produzione. La guida operativa dettagliata è in
+[`TESTING.md`](TESTING.md).
+
 ## Installazione nuova
 
 1. Clona il repository.
@@ -108,11 +158,11 @@ Default:
 |---|---:|
 | Stato macchina `/state` | 1 minuto |
 | Ultimi progetti `/project/last10` | 1 minuto |
-| Log corrente `/log` | 10 minuti |
+| Log corrente `/log` | 1 minuto |
 | Nuovi eventi `/newlog` | disattivato |
-| Magazzino `/warehouse` | 60 minuti |
-| Residui `/recovery` | 60 minuti |
-| Versione `/version` | 1440 minuti |
+| Magazzino `/warehouse` | 1 minuto |
+| Residui `/recovery` | 1 minuto |
+| Versione `/version` | 1 minuto |
 
 Lo scheduler utilizza un lock MySQL per evitare due esecuzioni contemporanee.
 

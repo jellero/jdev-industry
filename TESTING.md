@@ -4,7 +4,8 @@ L'ambiente usa PHP 8.3 con Apache e MariaDB 11.4. Il database viene
 inizializzato automaticamente da `database/schema.sql` al primo avvio.
 Il servizio `scheduler` esegue `bin/scheduler.php` ogni minuto e avvia solo
 le operazioni abilitate nella pagina Impostazioni. `/newlog` resta disattivato
-per impostazione predefinita.
+per impostazione predefinita. Stato, progetti, log, magazzino, residui e
+versione sono configurati con intervallo predefinito di un minuto.
 
 ## Avvio
 
@@ -24,6 +25,30 @@ Le credenziali sono esclusivamente locali e non vanno usate in produzione.
 docker compose -f compose.test.yml ps
 docker compose -f compose.test.yml logs --tail=100 web db scheduler
 ```
+
+Risultato atteso:
+
+- `db` è `healthy`;
+- `web` è raggiungibile su <http://localhost:8080>;
+- `scheduler` resta attivo e registra un esito per ogni operazione in scadenza;
+- `/newlog` non viene eseguito finché non viene abilitato esplicitamente.
+
+Per seguire lo scheduler in tempo reale:
+
+```powershell
+docker compose -f compose.test.yml logs -f scheduler
+```
+
+## Aggiornamento
+
+```powershell
+git pull --ff-only
+docker compose -f compose.test.yml up -d --build
+```
+
+Il comando ricrea i container quando necessario e mantiene il volume MariaDB.
+Se il nuovo codice aggiunge una migrazione, applica in ordine gli script non
+ancora eseguiti presenti in `database/migrations/`.
 
 ## Arresto
 
