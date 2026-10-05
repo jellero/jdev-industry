@@ -1,0 +1,72 @@
+name: jdev-industry-test
+
+services:
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: jdev_industry
+      MARIADB_USER: jdev_test
+      MARIADB_PASSWORD: jdev_test
+      MARIADB_ROOT_PASSWORD: root_test
+    ports:
+      - "3307:3306"
+    volumes:
+      - jdev_industry_test_db:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    restart: unless-stopped
+    environment:
+      APP_NAME: JDEV Industry Test
+      APP_TIMEZONE: Europe/Rome
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: jdev_industry
+      DB_USER: jdev_test
+      DB_PASS: jdev_test
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    restart: unless-stopped
+    environment:
+      APP_NAME: JDEV Industry Test
+      APP_TIMEZONE: Europe/Rome
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: jdev_industry
+      DB_USER: jdev_test
+      DB_PASS: jdev_test
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./:/var/www/html
+    command:
+      - /bin/sh
+      - -c
+      - |
+        while true; do
+          php /var/www/html/bin/scheduler.php
+          sleep 60
+        done
+
+volumes:
+  jdev_industry_test_db:

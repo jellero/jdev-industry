@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 final class MachineApi
 {
+    private const UPLOAD_TIMEOUT_SECONDS = 180;
+
     public function __construct(
         private readonly string $baseUrl,
         private readonly int $timeoutSeconds = 5
@@ -23,15 +25,31 @@ final class MachineApi
         $name = $originalName ?: basename($filePath);
         $mime = mime_content_type($filePath) ?: 'application/octet-stream';
 
-        return $this->request('POST', $endpoint, [
-            'filename' => new CURLFile($filePath, $mime, $name),
-        ]);
+        return $this->request(
+            'POST',
+            $endpoint,
+            ['filename' => new CURLFile($filePath, $mime, $name)],
+            max(self::UPLOAD_TIMEOUT_SECONDS, $this->timeoutSeconds)
+        );
     }
 
-    private function request(string $method, string $endpoint, ?array $fields = null): array
+    private function request(
+        string $method,
+        string $endpoint,
+        ?array $fields = null,
+        ?int $timeoutSeconds = null
+    ): array
     {
         $endpoint = '/' . ltrim($endpoint, '/');
         $url = rtrim($this->baseUrl, '/') . $endpoint;
+        $requestTimeout = max(2, $timeoutSeconds ?? $this->timeoutSeconds);
+        $headers = ['Accept: application/json, text/plain, */*'];
+
+        if ($method === 'POST' && $fields !== null) {
+            // Alcuni supervisori HTTP industriali non gestiscono correttamente
+            // l'attesa preliminare "Expect: 100-continue" di libcurl.
+            $headers[] = 'Expect:';
+        }
 
         $ch = curl_init($url);
         if ($ch === false) {
@@ -41,10 +59,10 @@ final class MachineApi
         $started = microtime(true);
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CONNECTTIMEOUT => min(3, $this->timeoutSeconds),
-            CURLOPT_TIMEOUT => $this->timeoutSeconds,
+            CURLOPT_CONNECTTIMEOUT => min(3, $requestTimeout),
+            CURLOPT_TIMEOUT => $requestTimeout,
             CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_HTTPHEADER => ['Accept: application/json, text/plain, */*'],
+            CURLOPT_HTTPHEADER => $headers,
             CURLOPT_CUSTOMREQUEST => $method,
         ]);
 
@@ -62,11 +80,37 @@ final class MachineApi
         $durationMs = (int) round((microtime(true) - $started) * 1000);
         $body = $body === false ? '' : (string) $body;
         $json = null;
+        $jsonNormalized = false;
+        $jsonError = null;
 
         if ($body !== '') {
             $decoded = json_decode($body, true);
             if (json_last_error() === JSON_ERROR_NONE) {
                 $json = $decoded;
+            } else {
+                $jsonError = json_last_error_msg();
+
+                // Alcune versioni Tecnoessetre restituiscono oggetti JavaScript
+                // come new Date(1234567890000), che non appartengono al JSON.
+                // Manteniamo il body originale e normalizziamo solo per il parser.
+                $normalizedBody = preg_replace(
+                    '/\bnew\s+Date\s*\(\s*(-?\d+(?:\.\d+)?)\s*\)/i',
+                    '$1',
+                    $body,
+                    -1,
+                    $replacementCount
+                );
+
+                if ($replacementCount > 0 && is_string($normalizedBody)) {
+                    $decoded = json_decode($normalizedBody, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $json = $decoded;
+                        $jsonNormalized = true;
+                        $jsonError = null;
+                    } else {
+                        $jsonError = json_last_error_msg();
+                    }
+                }
             }
         }
 
@@ -77,6 +121,8 @@ final class MachineApi
             'content_type' => $contentType,
             'body' => $body,
             'json' => $json,
+            'json_normalized' => $jsonNormalized,
+            'json_error' => $jsonError,
             'error' => $error,
             'errno' => $errno,
             'duration_ms' => $durationMs,

@@ -31,13 +31,15 @@ try {
 
     $update = db()->prepare(
         'UPDATE scheduled_tasks
-         SET last_run_at=?, next_run_at=?, last_status=?, last_message=?
+         SET last_run_at=NOW(),
+             next_run_at=DATE_ADD(NOW(), INTERVAL ? MINUTE),
+             last_status=?,
+             last_message=?
          WHERE id=?'
     );
 
     foreach ($tasks as $task) {
-        $started = date('Y-m-d H:i:s');
-        $next = date('Y-m-d H:i:s', time() + max(1, (int) $task['interval_minutes']) * 60);
+        $intervalMinutes = max(1, (int) $task['interval_minutes']);
         $machine = machineById((int) $task['machine_id']);
 
         if (!$machine) {
@@ -55,8 +57,7 @@ try {
         }
 
         $update->execute([
-            $started,
-            $next,
+            $intervalMinutes,
             $status,
             substr($message, 0, 500),
             $task['id'],

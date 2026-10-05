@@ -87,6 +87,28 @@ function statusLabel(string $status): string
     };
 }
 
+function connectionStatusLabel(mixed $value): string
+{
+    if (is_bool($value)) {
+        return $value ? 'Connessa' : 'Disconnessa';
+    }
+
+    if (is_numeric($value)) {
+        return (float) $value !== 0.0 ? 'Connessa' : 'Disconnessa';
+    }
+
+    $text = trim((string) ($value ?? ''));
+    $normalized = strtolower($text);
+    if (in_array($normalized, ['true', 'yes', 'ok', 'connected', 'connesso'], true)) {
+        return 'Connessa';
+    }
+    if (in_array($normalized, ['false', 'no', 'offline', 'disconnected', 'disconnesso'], true)) {
+        return 'Disconnessa';
+    }
+
+    return $text !== '' ? $text : '—';
+}
+
 function normalizeList(mixed $payload): array
 {
     if (!is_array($payload)) {
@@ -97,7 +119,7 @@ function normalizeList(mixed $payload): array
         return $payload;
     }
 
-    foreach (['Items', 'items', 'Data', 'data', 'Events', 'events', 'Log', 'log', 'Projects', 'projects'] as $key) {
+    foreach (['Items', 'items', 'Data', 'data', 'Events', 'events', 'Log', 'log', 'Projects', 'projects', 'Raws', 'raws'] as $key) {
         if (isset($payload[$key]) && is_array($payload[$key])) {
             return array_is_list($payload[$key]) ? $payload[$key] : [$payload[$key]];
         }
@@ -126,15 +148,21 @@ function projectSummary(mixed $payload): array
         $selected = is_array($items[0] ?? null) ? $items[0] : [];
     }
 
-    $name = $selected['Project']
-        ?? $selected['project']
-        ?? $selected['Name']
-        ?? $selected['name']
-        ?? $selected['Code']
-        ?? $selected['code']
-        ?? $selected['FileName']
-        ?? $selected['filename']
-        ?? null;
+    $name = null;
+    foreach ([
+        'OriginalFileName', 'originalFileName',
+        'Project', 'project',
+        'ListName', 'listname',
+        'Name', 'name',
+        'Code', 'code',
+        'FileName', 'filename',
+    ] as $key) {
+        $candidate = $selected[$key] ?? null;
+        if (is_scalar($candidate) && trim((string) $candidate) !== '') {
+            $name = (string) $candidate;
+            break;
+        }
+    }
 
     $progress = $selected['Progress']
         ?? $selected['progress']
@@ -147,8 +175,16 @@ function projectSummary(mixed $payload): array
         ?? null;
 
     if ($progress === null) {
-        $done = $selected['Completed'] ?? $selected['completed'] ?? null;
-        $total = $selected['Total'] ?? $selected['total'] ?? null;
+        $done = $selected['Completed']
+            ?? $selected['completed']
+            ?? $selected['Done']
+            ?? $selected['done']
+            ?? null;
+        $total = $selected['Total']
+            ?? $selected['total']
+            ?? $selected['Requested']
+            ?? $selected['requested']
+            ?? null;
         if (is_numeric($done) && is_numeric($total) && (float) $total > 0) {
             $progress = ((float) $done / (float) $total) * 100;
         }
@@ -233,6 +269,7 @@ function renderHeader(string $title): void
 {
     $appName = (string) config('app.name', 'JDEV Industry');
     $flash = pullFlash();
+    $cssVersion = (int) (@filemtime(dirname(__DIR__) . '/public/assets/app.css') ?: 0);
     ?>
 <!doctype html>
 <html lang="it">
@@ -240,7 +277,7 @@ function renderHeader(string $title): void
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= e($title) ?> · <?= e($appName) ?></title>
-    <link rel="stylesheet" href="assets/app.css">
+    <link rel="stylesheet" href="assets/app.css?v=<?= $cssVersion ?>">
 </head>
 <body>
 <header class="topbar">
@@ -268,9 +305,10 @@ function renderHeader(string $title): void
 
 function renderFooter(): void
 {
+    $jsVersion = (int) (@filemtime(dirname(__DIR__) . '/public/assets/app.js') ?: 0);
     ?>
 </main>
-<script src="assets/app.js"></script>
+<script src="assets/app.js?v=<?= $jsVersion ?>"></script>
 </body>
 </html>
 <?php
