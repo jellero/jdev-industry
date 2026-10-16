@@ -145,7 +145,43 @@ function projectSummary(mixed $payload): array
     }
 
     if ($selected === null) {
-        $selected = is_array($items[0] ?? null) ? $items[0] : [];
+        // Tecnoessetre restituisce /project/last10 ordinato per projectId, non
+        // per progetto attualmente lavorato. Inoltre "state" è spesso 0 per
+        // ogni riga. editDateTime, invece, cambia quando un progetto viene
+        // avviato o ripreso: scegliamo quindi la modifica più recente.
+        $candidates = array_values(array_filter($items, 'is_array'));
+        usort($candidates, static function (array $a, array $b): int {
+            $timestamp = static function (array $item, array $keys): float {
+                foreach ($keys as $key) {
+                    $value = $item[$key] ?? null;
+                    if (is_numeric($value) && (float) $value > 0) {
+                        return (float) $value;
+                    }
+                    if (is_string($value) && trim($value) !== '') {
+                        $parsed = strtotime($value);
+                        if ($parsed !== false) {
+                            return (float) $parsed * 1000;
+                        }
+                    }
+                }
+                return 0.0;
+            };
+
+            foreach ([
+                ['EditDateTime', 'editDateTime'],
+                ['LastEditTime', 'lastEditTime'],
+                ['Created', 'created'],
+            ] as $keys) {
+                $byTime = $timestamp($b, $keys) <=> $timestamp($a, $keys);
+                if ($byTime !== 0) {
+                    return $byTime;
+                }
+            }
+
+            return ((int) ($b['ProjectId'] ?? $b['projectId'] ?? 0))
+                <=> ((int) ($a['ProjectId'] ?? $a['projectId'] ?? 0));
+        });
+        $selected = $candidates[0] ?? [];
     }
 
     $name = null;
@@ -206,6 +242,23 @@ function projectSummary(mixed $payload): array
         'item' => $selected,
         'items' => $items,
     ];
+}
+
+function eventProjectName(array $event): string
+{
+    foreach ([
+        'Project', 'project',
+        'OriginalFileName', 'originalFileName',
+        'ListName', 'listName', 'listname',
+        'Filename', 'FileName', 'filename',
+    ] as $key) {
+        $candidate = $event[$key] ?? null;
+        if (is_scalar($candidate) && trim((string) $candidate) !== '') {
+            return trim((string) $candidate);
+        }
+    }
+
+    return '';
 }
 
 function eventDateTime(mixed $value): ?string

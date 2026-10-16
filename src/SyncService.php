@@ -100,9 +100,14 @@ final class SyncService
     public static function archiveEvents(array $machine, array $events, ?string $forcedSourceDay = null): array
     {
         $insert = db()->prepare(
-            'INSERT IGNORE INTO event_logs
+            'INSERT INTO event_logs
             (machine_id, job_id, event_key, event_time, event_type, message, project, reference, material, value_num, number_num, elapsed_time, waste, source_day, payload_json)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ON DUPLICATE KEY UPDATE
+                job_id=COALESCE(VALUES(job_id), job_id),
+                event_time=COALESCE(VALUES(event_time), event_time),
+                project=COALESCE(NULLIF(VALUES(project), \'\'), project),
+                payload_json=VALUES(payload_json)'
         );
         $findJob = db()->prepare(
             'SELECT id FROM jobs
@@ -125,7 +130,9 @@ final class SyncService
             }
             $read++;
 
-            $project = trim((string) ($event['Project'] ?? ''));
+            // Su TECHNOFAST il campo Project può essere vuoto anche quando
+            // OriginalFileName e Filename identificano correttamente il lavoro.
+            $project = eventProjectName($event);
             $projectBase = $project !== '' ? pathinfo($project, PATHINFO_FILENAME) : '';
             $jobId = null;
 
@@ -172,12 +179,16 @@ final class SyncService
                 $payload ?: '{}',
             ]);
 
-            if ($insert->rowCount() > 0) {
+            // MySQL restituisce 1 per un inserimento e 2 per un record
+            // esistente aggiornato: contiamo come nuovo solo il primo caso.
+            if ($insert->rowCount() === 1) {
                 $inserted++;
                 $type = strtoupper((string) ($event['Type'] ?? ''));
-                if ($jobId && in_array($type, ['CUT_COMPLETED', 'BIN_COMPLETED'], true)) {
-                    $markStarted->execute([$jobId]);
-                }
+            }
+
+            $type = strtoupper((string) ($event['Type'] ?? ''));
+            if ($jobId && in_array($type, ['CUT_STARTED', 'BIN_STARTED', 'CUT_COMPLETED', 'BIN_COMPLETED'], true)) {
+                $markStarted->execute([$jobId]);
             }
         }
 
