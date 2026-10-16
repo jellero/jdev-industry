@@ -55,7 +55,7 @@ final class EconomicsService
 
         $sql = "SELECT
                     COUNT(*) AS event_count,
-                    COALESCE(SUM(elapsed_time),0) AS elapsed_seconds,
+                    COALESCE(SUM(CASE WHEN event_type='BIN_COMPLETED' THEN elapsed_time ELSE 0 END),0) AS elapsed_seconds,
                     SUM(CASE WHEN event_type='CUT_COMPLETED' THEN 1 ELSE 0 END) AS cut_count,
                     SUM(CASE WHEN event_type='BIN_COMPLETED' THEN 1 ELSE 0 END) AS scheme_count,
                     COALESCE(SUM(CASE WHEN event_type='BIN_COMPLETED' THEN waste ELSE 0 END),0) AS waste_total,
@@ -318,7 +318,9 @@ final class EconomicsService
         }
 
         if ($rule['basis'] === 'hour') {
-            $sql = 'SELECT COALESCE(SUM(elapsed_time),0) FROM event_logs WHERE ' . implode(' AND ', $where);
+            $sql = "SELECT COALESCE(SUM(elapsed_time),0) FROM event_logs WHERE "
+                . implode(' AND ', $where)
+                . " AND event_type='BIN_COMPLETED'";
             $stmt = db()->prepare($sql);
             $stmt->execute($params);
             return (float) $stmt->fetchColumn() / 3600;

@@ -227,7 +227,7 @@ renderPageIntro('definire come valorizzare economicamente le lavorazioni della m
     </section>
 </div>
 <?php renderHelp([
-    'Ora macchina' => 'Moltiplica le ore di produzione registrate nei log (ElapsedTime espresso in secondi) per il prezzo orario.',
+    'Ora macchina' => 'Moltiplica le ore degli schemi completati per il prezzo orario. Se ElapsedTime è zero, il gestionale calcola la durata tra BIN_STARTED e BIN_COMPLETED.',
     'Taglio completato' => 'Applica un prezzo per ogni evento CUT_COMPLETED archiviato e collegato alla commessa.',
     'Schema completato' => 'Applica un prezzo per ogni evento BIN_COMPLETED archiviato e collegato alla commessa.',
     'Quota fissa commessa' => 'Aggiunge un importo una sola volta alla lavorazione, indipendentemente dal numero di eventi.',

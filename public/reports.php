@@ -107,7 +107,7 @@ renderPageIntro('analizzare le lavorazioni effettivamente registrate dalla macch
 </div>
 <?php renderHelp([
     'Mese / Anno' => 'Sono scorciatoie per ottenere subito un consuntivo mensile o annuale. Intervallo personalizzato permette qualsiasi periodo.',
-    'Ore macchina' => 'Somma di ElapsedTime degli eventi nel periodo, convertita da secondi a ore.',
+    'Ore macchina' => 'Somma delle durate degli schemi completati, convertita da secondi a ore. Se ElapsedTime è zero, la durata è calcolata tra BIN_STARTED e BIN_COMPLETED.',
     'Tagli' => 'Numero degli eventi CUT_COMPLETED registrati nel periodo.',
     'Schemi' => 'Numero degli eventi BIN_COMPLETED registrati nel periodo.',
     'Scarto' => 'Somma del campo Waste sugli eventi BIN_COMPLETED. L’unità resta quella restituita dalla macchina, perché la specifica non definisce qui una conversione economica automatica.',

@@ -263,17 +263,23 @@ function eventProjectName(array $event): string
 
 function eventDateTime(mixed $value): ?string
 {
+    $timestamp = eventTimestamp($value);
+    return $timestamp !== null ? date('Y-m-d H:i:s', (int) $timestamp) : null;
+}
+
+function eventTimestamp(mixed $value): ?float
+{
     if (is_numeric($value)) {
         $number = (float) $value;
         if ($number > 100000000000) {
             $number /= 1000;
         }
-        return date('Y-m-d H:i:s', (int) $number);
+        return $number;
     }
 
     if (is_string($value) && $value !== '') {
-        $ts = strtotime($value);
-        return $ts !== false ? date('Y-m-d H:i:s', $ts) : null;
+        $timestamp = strtotime($value);
+        return $timestamp !== false ? (float) $timestamp : null;
     }
 
     return null;

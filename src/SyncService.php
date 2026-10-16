@@ -107,6 +107,7 @@ final class SyncService
                 job_id=COALESCE(VALUES(job_id), job_id),
                 event_time=COALESCE(VALUES(event_time), event_time),
                 project=COALESCE(NULLIF(VALUES(project), \'\'), project),
+                elapsed_time=COALESCE(VALUES(elapsed_time), elapsed_time),
                 payload_json=VALUES(payload_json)'
         );
         $findJob = db()->prepare(
@@ -123,6 +124,21 @@ final class SyncService
         $inserted = 0;
         $linked = 0;
         $read = 0;
+        $startedAt = [];
+
+        // TECHNOFAST restituisce spesso ElapsedTime=0. Ricaviamo la durata
+        // dalle coppie *_STARTED / *_COMPLETED con lo stesso riferimento.
+        foreach ($events as $event) {
+            if (!is_array($event)) {
+                continue;
+            }
+            $type = strtoupper((string) ($event['Type'] ?? ''));
+            $reference = trim((string) ($event['Reference'] ?? ''));
+            $timestamp = eventTimestamp($event['DateTime'] ?? null);
+            if ($reference !== '' && $timestamp !== null && str_ends_with($type, '_STARTED')) {
+                $startedAt[substr($type, 0, -8) . '|' . $reference] = $timestamp;
+            }
+        }
 
         foreach ($events as $event) {
             if (!is_array($event)) {
@@ -160,6 +176,19 @@ final class SyncService
             $guid = trim((string) ($event['Guid'] ?? ''));
             $payload = json_encode($event, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             $eventKey = hash('sha256', $guid !== '' ? ('guid:' . $guid) : (string) $payload);
+            $type = strtoupper((string) ($event['Type'] ?? ''));
+            $reference = trim((string) ($event['Reference'] ?? ''));
+            $elapsed = is_numeric($event['ElapsedTime'] ?? null) && (float) $event['ElapsedTime'] > 0
+                ? (float) $event['ElapsedTime']
+                : null;
+
+            if ($elapsed === null && $reference !== '' && str_ends_with($type, '_COMPLETED')) {
+                $completedAt = eventTimestamp($event['DateTime'] ?? null);
+                $startKey = substr($type, 0, -10) . '|' . $reference;
+                if ($completedAt !== null && isset($startedAt[$startKey]) && $completedAt >= $startedAt[$startKey]) {
+                    $elapsed = $completedAt - $startedAt[$startKey];
+                }
+            }
 
             $insert->execute([
                 $machine['id'],
@@ -173,7 +202,7 @@ final class SyncService
                 isset($event['Material']) ? (string) $event['Material'] : null,
                 is_numeric($event['Value'] ?? null) ? $event['Value'] : null,
                 is_numeric($event['Number'] ?? null) ? (int) $event['Number'] : null,
-                is_numeric($event['ElapsedTime'] ?? null) ? $event['ElapsedTime'] : null,
+                $elapsed,
                 is_numeric($event['Waste'] ?? null) ? $event['Waste'] : null,
                 $sourceDay,
                 $payload ?: '{}',
@@ -183,10 +212,8 @@ final class SyncService
             // esistente aggiornato: contiamo come nuovo solo il primo caso.
             if ($insert->rowCount() === 1) {
                 $inserted++;
-                $type = strtoupper((string) ($event['Type'] ?? ''));
             }
 
-            $type = strtoupper((string) ($event['Type'] ?? ''));
             if ($jobId && in_array($type, ['CUT_STARTED', 'BIN_STARTED', 'CUT_COMPLETED', 'BIN_COMPLETED'], true)) {
                 $markStarted->execute([$jobId]);
             }

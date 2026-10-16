@@ -275,7 +275,7 @@ renderPageIntro('gestire una singola lavorazione dall’invio alla macchina fino
     'BTL · importa senza conversione' => 'Invia il file BTL all’endpoint /importBtl. Il gestionale inoltra il file così com’è al supervisore.',
     'BTL · importa con conversione' => 'Invia il BTL a /convertBtl: la conversione prevista viene eseguita dal supervisore Tecnoessetre secondo la configurazione macchina.',
     'TS7 · importa' => 'Invia un file TS7 all’endpoint /importTs7.',
-    'Costo automatico' => 'Usa solo grandezze documentate dai log: ElapsedTime per le ore, CUT_COMPLETED per i tagli e BIN_COMPLETED per gli schemi, più eventuali quote fisse definite nel tariffario.',
+    'Costo automatico' => 'Usa la durata degli schemi completati per le ore macchina. Quando TECHNOFAST restituisce ElapsedTime a zero, la durata viene ricavata dalla coppia BIN_STARTED/BIN_COMPLETED. Tagli, schemi e quote fisse seguono il tariffario.',
     'Materiali / extra' => 'Servono per valorizzare ciò che le API non possono prezzare da sole. Il campo Material identifica il materiale, ma il log non contiene il suo prezzo di acquisto.',
     'Sconto' => 'Inserisci quantità e prezzo come valore positivo: il gestionale lo sottrae automaticamente dal totale.',
     'Consolida costo' => 'Salva una fotografia dell’attuale calcolo economico. È utile prima di modificare le tariffe o prima di consegnare/stampare un consuntivo definitivo.',
